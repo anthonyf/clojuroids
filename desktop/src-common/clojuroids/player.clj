@@ -3,7 +3,8 @@
   (:import [com.badlogic.gdx.math MathUtils]))
 
 (defrecord Player [space-object
-                   left? right? up? max-speed acceleration deceleration])
+                   left? right? up? max-speed acceleration deceleration
+                   accelerating-timer flame])
 
 (defn- make-ship-shape
   [player]
@@ -18,6 +19,22 @@
       (+ y (* (MathUtils/sin (+ radians Math/PI)) 5))]
      [(+ x (* (MathUtils/cos (+ radians (/ (* 4 Math/PI) 5))) 8))
       (+ y (* (MathUtils/sin (+ radians (/ (* 4 Math/PI) 5))) 8))]]))
+
+
+(defn- make-flame-shape
+  [player]
+  (let [{:keys [space-object accelerating-timer]} player
+        {:keys [pos radians]} space-object
+        [x y] pos]
+    [[(+ x (* (MathUtils/cos (- radians (/ (* 5 Math/PI) 6))) 5))
+      (+ y (* (MathUtils/sin (- radians (/ (* 5 Math/PI) 6))) 5))]
+     [(+ x (* (MathUtils/cos (- radians Math/PI))
+              (+ 6 (* accelerating-timer 50))))
+      (+ y (* (MathUtils/sin (- radians Math/PI))
+              (+ 6 (* accelerating-timer 50))))]
+     [(+ x (* (MathUtils/cos (+ radians (/ (* 5 Math/PI) 6))) 5))
+      (+ y (* (MathUtils/sin (+ radians (/ (* 5 Math/PI) 6))) 5))]]))
+
 
 (defn- accelerate
   [player delta-time]
@@ -58,7 +75,7 @@
 
 (defn update-player!
   [player screen-size delta-time]
-  (let [{:keys [left? right? up?]} player]
+  (let [{:keys [left? right? up? accelerating-timer]} player]
     (as-> player p
       ;; turning
       (cond left? (turn-left p delta-time)
@@ -66,12 +83,22 @@
             :else p)
       ;; acceleration
       (if up?
-        (accelerate p delta-time)
+        (-> p
+            (accelerate delta-time)
+            (assoc :accelerating-timer
+                   (as-> accelerating-timer at
+                     (+ at delta-time)
+                     (if (> at 0.1)
+                       0
+                       at))))
         p)
       ;; deceleration
       (decelerate p  delta-time)
       ;; update shapes
       (assoc-in p [:space-object :shape] (make-ship-shape p))
+      (assoc p :flame (if up?
+                        (make-flame-shape p)
+                        []))
       ;; update space-object
       (assoc p :space-object (update-space-object! (:space-object p) screen-size delta-time)))))
 
@@ -79,8 +106,10 @@
 
 (defn draw-player
   [player shape-renderer]
-  (let [{:keys [space-object]} player]
-    (draw-space-object space-object shape-renderer player-color)))
+  (let [{:keys [space-object up? flame]} player]
+    (draw-space-object space-object shape-renderer player-color)
+    (when up?
+      (draw-shape shape-renderer flame player-color))))
 
 (defn make-player
   [[screen-width screen-height]]
@@ -93,4 +122,6 @@
                   :up? false
                   :acceleration 200
                   :deceleration 10
-                  :max-speed 300})))
+                  :max-speed 300
+                  :flame []
+                  :accelerating-timer 0})))
