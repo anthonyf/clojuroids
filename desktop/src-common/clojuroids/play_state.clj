@@ -5,19 +5,47 @@
             [clojuroids.asteroids :as a]
             [clojuroids.key-state :as ks])
   (:import [com.badlogic.gdx.graphics.glutils ShapeRenderer]
+           [com.badlogic.gdx.math MathUtils]
            (com.badlogic.gdx Input$Keys))
   (:gen-class))
 
+(defn- random-asteroid-location
+  [screen-size player-pos]
+  (let [[screen-width screen-height] screen-size
+        [px py] player-pos
+        [ax ay] [(MathUtils/random screen-width)
+                 (MathUtils/random screen-height)]
+        [dx dy] [(- ax px)
+                 (- ay py)]
+        dist (Math/sqrt (+ (* dx dx) (* dy dy)))]
+    (if (< dist 100)
+      (recur screen-size player-pos)
+      [ax ay])))
+
+(defn- spawn-asteroids
+  [state]
+  (let [{:keys [level player screen-size-ref]} state
+        player-pos (get-in player [:space-object :pos])
+        num-to-spawn (+ 4 (- level 1))
+        total-asteroids (* num-to-spawn 7)
+        asteroids (for [_ (range num-to-spawn)]
+                    (a/make-asteroid (random-asteroid-location @screen-size-ref player-pos)
+                                     :large))]
+    (merge state
+           {:asteroids asteroids
+            :total-asteroids total-asteroids
+            :num-asteroids-left total-asteroids})))
+
 (defrecord PlayState [screen-size-ref key-state-ref shape-renderer player
-                      bullets asteroids]
+                      bullets asteroids
+                      level total-asteroids num-asteroids-left]
   gsm/game-state
   (init [this]
-    (merge this
-           {:shape-renderer (ShapeRenderer.)
-            :player (p/make-player @screen-size-ref)
-            :asteroids [(a/make-asteroid [100 100] :large)
-                        (a/make-asteroid [200 100] :medium)
-                        (a/make-asteroid [300 100] :small)]}))
+    (-> this
+        (merge {:shape-renderer (ShapeRenderer.)
+                :player         (p/make-player @screen-size-ref)
+                :level          1})
+        (spawn-asteroids)))
 
   (update! [this screen-size delta-time]
     (-> this
