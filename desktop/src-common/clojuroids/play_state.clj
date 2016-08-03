@@ -1,9 +1,11 @@
 (ns clojuroids.play-state
-  (:require [clojuroids.game-state-manager :as gsm]
+  (:require [clojure.set :as set]
+            [clojuroids.game-state-manager :as gsm]
             [clojuroids.player :as p]
             [clojuroids.bullet :as b]
             [clojuroids.asteroids :as a]
-            [clojuroids.key-state :as ks])
+            [clojuroids.key-state :as ks]
+            [clojuroids.space-object :as so])
   (:import [com.badlogic.gdx.graphics.glutils ShapeRenderer]
            [com.badlogic.gdx.math MathUtils]
            (com.badlogic.gdx Input$Keys))
@@ -36,6 +38,8 @@
             :total-asteroids total-asteroids
             :num-asteroids-left total-asteroids})))
 
+(declare handle-collisions)
+
 (defrecord PlayState [screen-size-ref key-state-ref shape-renderer player
                       bullets asteroids
                       level total-asteroids num-asteroids-left]
@@ -44,14 +48,17 @@
     (-> this
         (merge {:shape-renderer (ShapeRenderer.)
                 :player         (p/make-player @screen-size-ref)
-                :level          1})
+                :level          1
+                :bullets        #{}
+                :asteroids      #{}})
         (spawn-asteroids)))
 
   (update! [this screen-size delta-time]
     (-> this
         (update :player #(p/update-player! % screen-size delta-time))
         (update :bullets #(b/update-bullets % screen-size delta-time))
-        (update :asteroids #(a/update-asteroids % screen-size delta-time))))
+        (update :asteroids #(a/update-asteroids % screen-size delta-time))
+        (handle-collisions)))
 
   (draw [this]
     (p/draw-player player shape-renderer)
@@ -74,3 +81,55 @@
   [screen-size-ref key-state-ref]
   (map->PlayState {:screen-size-ref screen-size-ref
                    :key-state-ref key-state-ref}))
+
+(defn- split-asteroid
+  [state asteroid]
+  (-> state
+      (update :num-asteroids-left dec)
+      (update :asteroids #(let [{type :type
+                                 {:keys [pos]} :space-object} asteroid]
+                            (if (contains? #{:large :medium} type)
+                              (let [new-type (case type
+                                               :large :medium
+                                               :medium :small)]
+                                (set/union % (set [(a/make-asteroid pos new-type)
+                                                   (a/make-asteroid pos new-type)])))
+                              %)))))
+
+(defn handle-asteroid-bullet-collision
+  "if there is a collision between asteroid and bullet, remove them from the
+  game state and split asteroid into two"
+  [state asteroid bullet]
+  (let [{:keys [asteroids bullets]} state
+        {{asteroid-shape :shape} :space-object} asteroid
+        {{bullet-pos :pos} :space-object} bullet]
+    (if (so/shape-contains? asteroid-shape bullet-pos)
+      (-> state
+          (merge {:asteroids (disj asteroids asteroid)
+                  :bullets (disj bullets bullet)})
+          (split-asteroid asteroid))
+      state)))
+
+(defn handle-asteroid-bullet-collisions
+  [state]
+  (let [{:keys [bullets]} state]
+    (reduce (fn [state bullet]
+              (let [{:keys [asteroids]} state]
+                (reduce (fn [state asteroid]
+                          (reduced
+                            (handle-asteroid-bullet-collision state asteroid bullet)))
+                        state
+                        asteroids)))
+            state
+            bullets)))
+
+(defn handle-player-asteroid-collisions
+  [state]
+  ;; TODO
+  state)
+
+(defn handle-collisions
+  [state]
+  (-> state
+      (handle-asteroid-bullet-collisions)
+      (handle-player-asteroid-collisions)))
