@@ -12,7 +12,7 @@
                  [com.badlogicgames.gdx/gdx-platform "1.9.3"
                   :classifier "natives-desktop"]
                  [org.clojure/clojure "1.7.0"]
-                 ;;[play-clj "1.1.0"]
+                 [org.clojure/tools.trace "0.7.9"]
                  ]
   
   :source-paths ["src" "src-common"]
