@@ -64,3 +64,21 @@
                      :radians radians
                      :rotation-speed 3
                      :shape []}))
+
+(defn shape-contains?
+  [shape [x y]]
+  (reduce (fn [b [[shapexi shapeyi] [shapexj shapeyj]]]
+            (if (and (not= (> shapeyi y) (> shapeyj y))
+                     (< x (+ (/ (* (- shapexj shapexi)
+                                   (- y shapeyi))
+                                (- shapeyj shapeyi))
+                             shapexi)))
+              (not b)
+              b))
+          false
+          (vert-lines-seq shape)))
+
+(defn shapes-intersect?
+  [shape-a shape-b]
+  (some #(shape-contains? shape-a %)
+        shape-b))
