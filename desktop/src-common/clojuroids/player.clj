@@ -125,3 +125,8 @@
                   :max-speed 300
                   :flame []
                   :accelerating-timer 0})))
+
+(defn player-hit
+  [player]
+  (println "player-hit!")
+  player)

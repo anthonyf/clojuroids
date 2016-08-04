@@ -125,8 +125,18 @@
 
 (defn handle-player-asteroid-collisions
   [state]
-  ;; TODO
-  state)
+  (let [{{{player-shape :shape} :space-object} :player
+         asteroids :asteroids} state]
+    (reduce (fn [state asteroid]
+              (let [{{asteroid-shape :shape} :space-object} asteroid]
+                (if (so/shapes-intersect? player-shape asteroid-shape)
+                  (-> state
+                      (update :player #(p/player-hit %))
+                      (update :asteroids #(disj % asteroid))
+                      (split-asteroid asteroid))
+                  state)))
+            state
+            asteroids)))
 
 (defn handle-collisions
   [state]
