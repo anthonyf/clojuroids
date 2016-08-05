@@ -4,16 +4,20 @@
             [clojuroids.play-state :as ps]
             [clojure.stacktrace :as st])
   (:import [com.badlogic.gdx ApplicationListener Gdx]
-           [com.badlogic.gdx.graphics GL30 OrthographicCamera]))
+           [com.badlogic.gdx.graphics GL30 OrthographicCamera]
+           (com.badlogic.gdx Input$Keys)))
 
 (defprotocol Restartable
   (restart [this]))
+
+(def rewind-factor 3)
 
 (def app-listener
   (let [camera-ref (atom nil)
         screen-size-ref (atom [])
         key-state-ref (atom {})
         game-state-ref (atom nil)
+        game-states-ref (atom '())
         restart? (atom false)]
     (reify
       ApplicationListener
@@ -39,10 +43,16 @@
 
         (try
           (when-not (nil? @game-state-ref)
-            (swap! game-state-ref gsm/handle-input)
-            (swap! game-state-ref gsm/update! @screen-size-ref (.getDeltaTime Gdx/graphics))
-            (gsm/draw @game-state-ref)
-            (swap! key-state-ref update-key-state))
+            (if (key-down? @key-state-ref Input$Keys/BACKSPACE)
+              (when (not (empty? @game-states-ref))
+                    (reset! game-state-ref (first (take rewind-factor @game-states-ref)))
+                    (reset! game-states-ref (drop rewind-factor @game-states-ref))
+                    (gsm/draw @game-state-ref))
+              (do (swap! game-state-ref gsm/handle-input)
+                  (swap! game-state-ref gsm/update! @screen-size-ref (.getDeltaTime Gdx/graphics))
+                  (gsm/draw @game-state-ref)
+                  (swap! key-state-ref update-key-state)
+                  (swap! game-states-ref conj @game-state-ref))))
           (catch Exception e
             (reset! game-state-ref nil)
             (st/print-cause-trace e))))
