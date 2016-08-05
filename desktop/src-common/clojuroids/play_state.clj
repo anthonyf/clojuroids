@@ -4,6 +4,7 @@
             [clojuroids.player :as p]
             [clojuroids.bullet :as b]
             [clojuroids.asteroids :as a]
+            [clojuroids.particle :as part]
             [clojuroids.key-state :as ks]
             [clojuroids.space-object :as so])
   (:import [com.badlogic.gdx.graphics.glutils ShapeRenderer]
@@ -41,7 +42,7 @@
 (declare handle-collisions)
 
 (defrecord PlayState [screen-size-ref key-state-ref shape-renderer player
-                      bullets asteroids
+                      bullets asteroids particles
                       level total-asteroids num-asteroids-left]
   gsm/game-state
   (init [this]
@@ -50,7 +51,8 @@
                 :player         (p/make-player @screen-size-ref)
                 :level          1
                 :bullets        #{}
-                :asteroids      #{}})
+                :asteroids      #{}
+                :particles      #{}})
         (spawn-asteroids)))
 
   (update! [this screen-size delta-time]
@@ -61,12 +63,14 @@
             (update :player #(p/update-player! % screen-size delta-time))
             (update :bullets #(b/update-bullets % screen-size delta-time))
             (update :asteroids #(a/update-asteroids % screen-size delta-time))
+            (update :particles #(part/update-particles % screen-size delta-time))
             (handle-collisions)))))
 
   (draw [this]
     (p/draw-player player shape-renderer)
     (b/draw-bullets bullets shape-renderer)
-    (a/draw-asteroids asteroids shape-renderer))
+    (a/draw-asteroids asteroids shape-renderer)
+    (part/draw-particles particles shape-renderer))
 
   (handle-input [this]
     (as-> this state
@@ -85,9 +89,18 @@
   (map->PlayState {:screen-size-ref screen-size-ref
                    :key-state-ref key-state-ref}))
 
+(defn create-particles
+  [state pos]
+  (update state :particles
+          (fn [particles]
+            (into #{}
+                  (for [_ (range 6)]
+                    (part/make-particle pos))))))
+
 (defn- split-asteroid
   [state asteroid]
   (-> state
+      (create-particles (-> asteroid :space-object :pos))
       (update :num-asteroids-left dec)
       (update :asteroids #(let [{type :type
                                  {:keys [pos]} :space-object} asteroid]
