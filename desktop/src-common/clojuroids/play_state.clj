@@ -54,11 +54,14 @@
         (spawn-asteroids)))
 
   (update! [this screen-size delta-time]
-    (-> this
-        (update :player #(p/update-player! % screen-size delta-time))
-        (update :bullets #(b/update-bullets % screen-size delta-time))
-        (update :asteroids #(a/update-asteroids % screen-size delta-time))
-        (handle-collisions)))
+    (let [{dead? :dead?} player]
+      (if dead?
+        (update this :player #(p/reset % screen-size))
+        (-> this
+            (update :player #(p/update-player! % screen-size delta-time))
+            (update :bullets #(b/update-bullets % screen-size delta-time))
+            (update :asteroids #(a/update-asteroids % screen-size delta-time))
+            (handle-collisions)))))
 
   (draw [this]
     (p/draw-player player shape-renderer)
@@ -96,7 +99,7 @@
                                                    (a/make-asteroid pos new-type)])))
                               %)))))
 
-(defn handle-asteroid-bullet-collision
+(defn- handle-asteroid-bullet-collision
   "if there is a collision between asteroid and bullet, remove them from the
   game state and split asteroid into two"
   [state asteroid bullet]
@@ -110,7 +113,7 @@
           (split-asteroid asteroid))
       state)))
 
-(defn handle-asteroid-bullet-collisions
+(defn- handle-asteroid-bullet-collisions
   [state]
   (let [{:keys [bullets]} state]
     (reduce (fn [state bullet]
@@ -123,22 +126,25 @@
             state
             bullets)))
 
-(defn handle-player-asteroid-collisions
+(defn- handle-player-asteroid-collisions
   [state]
-  (let [{{{player-shape :shape} :space-object} :player
-         asteroids :asteroids} state]
-    (reduce (fn [state asteroid]
-              (let [{{asteroid-shape :shape} :space-object} asteroid]
-                (if (so/shapes-intersect? player-shape asteroid-shape)
-                  (-> state
-                      (update :player #(p/player-hit %))
-                      (update :asteroids #(disj % asteroid))
-                      (split-asteroid asteroid))
-                  state)))
-            state
-            asteroids)))
+  (let [{:keys [player asteroids]} state
+        {{player-shape :shape} :space-object
+         hit? :hit?} player]
+    (if-not hit?
+      (reduce (fn [state asteroid]
+                (let [{{asteroid-shape :shape} :space-object} asteroid]
+                  (if (so/shapes-intersect? player-shape asteroid-shape)
+                    (-> state
+                        (update :player #(p/player-hit %))
+                        (update :asteroids #(disj % asteroid))
+                        (split-asteroid asteroid))
+                    state)))
+              state
+              asteroids)
+      state)))
 
-(defn handle-collisions
+(defn- handle-collisions
   [state]
   (-> state
       (handle-asteroid-bullet-collisions)
