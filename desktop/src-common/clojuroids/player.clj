@@ -174,3 +174,11 @@
                                            (MathUtils/sin (+ radians 2.8))]]})
         (update player :space-object (fn [so] (assoc so :dpos [0 0]))))
       player)))
+
+(defn reset
+  [player [screen-width screen-height]]
+  (as-> player p
+    (assoc-in p [:space-object :pos] [(/ screen-width 2) (/ screen-height 2)])
+    (assoc-in p [:space-object :shape] (make-ship-shape p))
+    (merge p {:hit? false
+              :dead? false})))
