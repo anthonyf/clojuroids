@@ -4,35 +4,35 @@ Clojuroids is an impelementation of Asteroids in Clojure using libGDX.  The cloj
 
 ## Tutorial Parts
 
-[Part 1 - Project setup](https://github.com/anthonyf/clojuroids/commit/a8c70c33772d03ef6a5cf150335e132ba7ca5913)
+[Part 1 - project setup](https://github.com/anthonyf/clojuroids/commit/a8c70c33772d03ef6a5cf150335e132ba7ca5913)
 
-[Part 2 - Setting up the Camera](https://github.com/anthonyf/clojuroids/compare/part-1...part-2)
+[Part 2 - setting up the camera](https://github.com/anthonyf/clojuroids/compare/part-1...part-2)
 
-[Part 3](https://github.com/anthonyf/clojuroids/compare/part-2...part-3)
+[Part 3 - keyboard Input](https://github.com/anthonyf/clojuroids/compare/part-2...part-3)
 
-[Part 4.1](https://github.com/anthonyf/clojuroids/compare/part-3...part-4.1)
+[Part 4.1 - game state management](https://github.com/anthonyf/clojuroids/compare/part-3...part-4.1)
 
-[Part 4.2](https://github.com/anthonyf/clojuroids/compare/part-4.1...part-4.2)
+[Part 4.2 - make app restartable](https://github.com/anthonyf/clojuroids/compare/part-4.1...part-4.2)
 
-[Part 5](https://github.com/anthonyf/clojuroids/compare/part-4.2...part-5)
+[Part 5 - player movement](https://github.com/anthonyf/clojuroids/compare/part-4.2...part-5)
 
-[Part 6.1](https://github.com/anthonyf/clojuroids/compare/part-5...part-6.1)
+[Part 6.1 - add flames](https://github.com/anthonyf/clojuroids/compare/part-5...part-6.1)
 
-[Part 6.2](https://github.com/anthonyf/clojuroids/compare/part-6.1...part-6.2)
+[Part 6.2 - bullets](https://github.com/anthonyf/clojuroids/compare/part-6.1...part-6.2)
 
-[Part 7.1](https://github.com/anthonyf/clojuroids/compare/part-6.2...part-7.1)
+[Part 7.1 - asteroids](https://github.com/anthonyf/clojuroids/compare/part-6.2...part-7.1)
 
-[Part 7.2](https://github.com/anthonyf/clojuroids/compare/part-7.1...part-7.2)
+[Part 7.2 - spawning asteroids](https://github.com/anthonyf/clojuroids/compare/part-7.1...part-7.2)
 
-[Part 8.1](https://github.com/anthonyf/clojuroids/compare/part-7.2...part-8.1)
+[Part 8.1 - shooting asteroids](https://github.com/anthonyf/clojuroids/compare/part-7.2...part-8.1)
 
-[Part 8.2](https://github.com/anthonyf/clojuroids/compare/part-8.1...part-8.2)
+[Part 8.2 - player/asteroid collision](https://github.com/anthonyf/clojuroids/compare/part-8.1...part-8.2)
 
-[Part 9.1](https://github.com/anthonyf/clojuroids/compare/part-8.2...part-9.1)
+[Part 9.1 - ship explosion](https://github.com/anthonyf/clojuroids/compare/part-8.2...part-9.1)
 
-[Part 9.2](https://github.com/anthonyf/clojuroids/compare/part-9.1...part-9.2)
+[Part 9.2 - player reset](https://github.com/anthonyf/clojuroids/compare/part-9.1...part-9.2)
 
-[Part 9.3](https://github.com/anthonyf/clojuroids/compare/part-9.3...part-9.3)
+[Part 9.3 - explosion particles](https://github.com/anthonyf/clojuroids/compare/part-9.3...part-9.3)
 
 [Part 10](https://github.com/anthonyf/clojuroids/compare/part-9.3...part-10)
 
