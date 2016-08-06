@@ -1,6 +1,6 @@
 ## Introduction
 
-Clojuroids is an impelementation of the game Asteroids in Clojure using libGDX.  The clojure code is adapted from the Java code presented by [ForeignGuyMike](https://www.youtube.com/channel/UC_IV37n-uBpRp64hQIwywWQ "YouTube Profile") in his [LibGDX Desktop Tutorial](https://www.youtube.com/watch?v=NDGaj0wGDf4&list=PL-2t7SM0vDfeZUKeM7Jm4U9utHwFS1N-C "YouTube Link").
+Clojuroids is an impelementation of Asteroids in Clojure using libGDX.  The clojure code is adapted from the Java code presented by [ForeignGuyMike](https://www.youtube.com/channel/UC_IV37n-uBpRp64hQIwywWQ "YouTube Profile") in his [LibGDX Desktop Tutorial](https://www.youtube.com/watch?v=NDGaj0wGDf4&list=PL-2t7SM0vDfeZUKeM7Jm4U9utHwFS1N-C "YouTube Link").
 
 ## Tutorial Parts
 
