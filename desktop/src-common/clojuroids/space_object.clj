@@ -1,6 +1,7 @@
 (ns clojuroids.space-object
   (:import [com.badlogic.gdx.graphics.glutils
-            ShapeRenderer ShapeRenderer$ShapeType]))
+            ShapeRenderer ShapeRenderer$ShapeType]
+           [com.badlogic.gdx.math Polygon]))
 
 (defrecord SpaceObject
   [pos dpos radians rotation-speed size shape])
@@ -66,6 +67,11 @@
                      :shape []}))
 
 (defn shape-contains?
+  [shape [x y]]
+  (.contains (Polygon. (float-array (flatten shape)))
+             x y))
+
+(defn shape-contains?-old
   [shape [x y]]
   (reduce (fn [b [[shapexi shapeyi] [shapexj shapeyj]]]
             (if (and (not= (> shapeyi y) (> shapeyj y))
