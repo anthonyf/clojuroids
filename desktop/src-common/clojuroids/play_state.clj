@@ -57,14 +57,20 @@
 
   (update! [this screen-size delta-time]
     (let [{dead? :dead?} player]
-      (if dead?
-        (update this :player #(p/reset % screen-size))
-        (-> this
-            (update :player #(p/update-player! % screen-size delta-time))
-            (update :bullets #(b/update-bullets % screen-size delta-time))
-            (update :asteroids #(a/update-asteroids % screen-size delta-time))
-            (update :particles #(part/update-particles % screen-size delta-time))
-            (handle-collisions)))))
+      (cond dead?
+            (update this :player #(p/reset % screen-size))
+
+            (= 0 (count asteroids))
+            (-> this
+                (update :level #(+ level %))
+                (spawn-asteroids))
+
+            :else (-> this
+                      (update :player #(p/update-player! % screen-size delta-time))
+                      (update :bullets #(b/update-bullets % screen-size delta-time))
+                      (update :asteroids #(a/update-asteroids % screen-size delta-time))
+                      (update :particles #(part/update-particles % screen-size delta-time))
+                      (handle-collisions)))))
 
   (draw [this]
     (p/draw-player player shape-renderer)
