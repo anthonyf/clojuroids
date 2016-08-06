@@ -112,28 +112,20 @@
                                                    (a/make-asteroid pos new-type)])))
                               %)))))
 
-(defn- handle-asteroid-bullet-collision
-  "if there is a collision between asteroid and bullet, remove them from the
-  game state and split asteroid into two"
-  [state asteroid bullet]
-  (let [{:keys [asteroids bullets]} state
-        {{asteroid-shape :shape} :space-object} asteroid
-        {{bullet-pos :pos} :space-object} bullet]
-    (if (so/shape-contains? asteroid-shape bullet-pos)
-      (-> state
-          (merge {:asteroids (disj asteroids asteroid)
-                  :bullets (disj bullets bullet)})
-          (split-asteroid asteroid))
-      state)))
-
 (defn- handle-asteroid-bullet-collisions
   [state]
   (let [{:keys [bullets]} state]
     (reduce (fn [state bullet]
               (let [{:keys [asteroids]} state]
                 (reduce (fn [state asteroid]
-                          (reduced
-                            (handle-asteroid-bullet-collision state asteroid bullet)))
+                          (let [{{asteroid-shape :shape} :space-object} asteroid
+                                {{bullet-pos :pos} :space-object} bullet]
+                            (if (so/shape-contains? asteroid-shape bullet-pos)
+                              (reduced (-> state
+                                           (merge {:asteroids (disj asteroids asteroid)
+                                                   :bullets (disj bullets bullet)})
+                                           (split-asteroid asteroid)))
+                              state)))
                         state
                         asteroids)))
             state
