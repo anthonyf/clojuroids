@@ -5,30 +5,30 @@
 (defrecord Asteroid
   [space-object type num-points dists remove?])
 
-(defn make-asteroid-shape
+(defn- update-asteroid-shape
   [asteroid]
   (let [{:keys [num-points dists]
          {[x y] :pos
           :keys [radians]} :space-object} asteroid
         angles (take num-points
                      (drop 1 (iterate
-                               (fn [angle]
-                                 (+ angle (/ (* 2 Math/PI) num-points)))
-                               0)))]
-    (map (fn [angle dist]
-           [(+ x (* (MathUtils/cos (+ radians angle)) dist))
-            (+ y (* (MathUtils/sin (+ radians angle)) dist))])
-         angles dists)))
+                              (fn [angle]
+                                (+ angle (/ (* 2 Math/PI) num-points)))
+                              0)))]
+    (assoc-in asteroid [:space-object :shape]
+              (map (fn [angle dist]
+                     [(+ x (* (MathUtils/cos (+ radians angle)) dist))
+                      (+ y (* (MathUtils/sin (+ radians angle)) dist))])
+                   angles dists))))
 
-(defn update-asteroid
+(defn- update-asteroid
   [asteroid screen-size delta-time]
   (let [{space-object :space-object} asteroid
         {:keys [rotation-speed]} space-object]
-    (as-> asteroid a
-          (assoc a :space-object (-> space-object
-                                     (assoc :shape (make-asteroid-shape a))
-                                     (so/update-space-object! screen-size delta-time)))
-          (assoc a :radians (* rotation-speed delta-time)))))
+    (-> asteroid
+      (assoc :space-object (so/update-space-object! space-object screen-size delta-time))
+      (update-asteroid-shape)
+      (assoc :radians (* rotation-speed delta-time)))))
 
 (defn update-asteroids
   [asteroids screen-size delta-time]
@@ -39,7 +39,7 @@
 
 (def asteroid-color [1 1 1 1])
 
-(defn draw-asteroid
+(defn- draw-asteroid
   [asteroid shape-renderer]
   (let [{:keys [space-object]} asteroid]
     (so/draw-space-object space-object shape-renderer asteroid-color)))
@@ -62,15 +62,16 @@
                                           :large {:num-points 12
                                                   :size       [40 40]
                                                   :speed      (MathUtils/random 20 30)})]
-    (map->Asteroid {:type         type
-                    :num-points   num-points
-                    :dists        (let [[width _] size
-                                        radius (/ width 2.0)]
-                                    (for [_ (range num-points)]
-                                      (MathUtils/random (/ radius 2.0) radius)))
-                    :space-object (so/map->SpaceObject {:pos            [x y]
-                                                        :rotation-speed (MathUtils/random -1 1)
-                                                        :radians        radians
-                                                        :size           size
-                                                        :dpos           [(* speed (MathUtils/cos radians))
-                                                                         (* speed (MathUtils/sin radians))]})})))
+    (-> (map->Asteroid {:type         type
+                        :num-points   num-points
+                        :dists        (let [[width _] size
+                                            radius (/ width 2.0)]
+                                        (for [_ (range num-points)]
+                                          (MathUtils/random (/ radius 2.0) radius)))
+                        :space-object (so/map->SpaceObject {:pos            [x y]
+                                                            :rotation-speed (MathUtils/random -1 1)
+                                                            :radians        radians
+                                                            :size           size
+                                                            :dpos           [(* speed (MathUtils/cos radians))
+                                                                             (* speed (MathUtils/sin radians))]})})
+        (update-asteroid-shape))))

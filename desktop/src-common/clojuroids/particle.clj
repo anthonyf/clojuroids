@@ -34,8 +34,7 @@
   [particles screen-size delta-time]
   (->> particles
        (map #(update-particle % screen-size delta-time))
-       (filter :remove?)
-       (into #{})))
+       (remove :remove?)))
 
 (def particle-color [1 1 1 1])
 
