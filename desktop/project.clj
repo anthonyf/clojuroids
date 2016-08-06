@@ -5,6 +5,7 @@
                  [com.badlogicgames.gdx/gdx-backend-lwjgl "1.9.3"]
                  [com.badlogicgames.gdx/gdx-platform "1.9.3"
                   :classifier "natives-desktop"]
+                 [com.badlogicgames.gdx/gdx-freetype "1.9.3"]
                  [org.clojure/clojure "1.7.0"]
                  [org.clojure/tools.trace "0.7.9"]
                  ]
