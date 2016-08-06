@@ -68,17 +68,12 @@
 
 (defn shape-contains?
   [shape [x y]]
-  (.contains (Polygon. (float-array (flatten shape)))
-             x y))
-
-(defn shape-contains?-old
-  [shape [x y]]
-  (reduce (fn [b [[shapexi shapeyi] [shapexj shapeyj]]]
-            (if (and (not= (> shapeyi y) (> shapeyj y))
-                     (< x (+ (/ (* (- shapexj shapexi)
-                                   (- y shapeyi))
-                                (- shapeyj shapeyi))
-                             shapexi)))
+  (reduce (fn [b [[xi yi] [xj yj]]]
+            (if (and (not= (> yi y) (> yj y))
+                     (< x (+ (/ (* (- xj xi)
+                                   (- y yi))
+                                (- yj yi))
+                             xi)))
               (not b)
               b))
           false
