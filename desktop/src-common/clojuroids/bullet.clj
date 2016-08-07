@@ -57,13 +57,3 @@
   [bullets shape-renderer]
   (doseq [bullet bullets]
     (draw-bullet bullet shape-renderer)))
-
-(def ^:const max-bullets 4)
-
-(defn shoot
-  [player bullets]
-  (let [{:keys [space-object]} player
-        {:keys [pos radians]} space-object]
-    (when (< (count bullets) max-bullets)
-      (conj bullets
-            (make-bullet pos radians)))))
