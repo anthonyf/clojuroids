@@ -8,6 +8,10 @@
             [clojuroids.key-state :as ks]
             [clojuroids.space-object :as so])
   (:import [com.badlogic.gdx.graphics.glutils ShapeRenderer]
+           [com.badlogic.gdx.graphics.g2d SpriteBatch]
+           [com.badlogic.gdx.graphics.g2d.freetype FreeTypeFontGenerator
+            FreeTypeFontGenerator$FreeTypeFontParameter]
+           [com.badlogic.gdx Gdx]
            [com.badlogic.gdx.math MathUtils]
            (com.badlogic.gdx Input$Keys))
   (:gen-class))
@@ -55,11 +59,16 @@
 
 (defrecord PlayState [screen-size-ref key-state-ref shape-renderer player
                       bullets asteroids particles
-                      level total-asteroids num-asteroids-left]
+                      level total-asteroids num-asteroids-left
+                      sprite-batch font]
   gsm/game-state
   (init [this]
     (-> this
         (merge {:shape-renderer (ShapeRenderer.)
+                :sprite-batch   (SpriteBatch.)
+                :font           (let [gen (FreeTypeFontGenerator. (.internal Gdx/files "fonts/Hyperspace Bold.ttf"))]
+                                  (.generateFont gen (doto (FreeTypeFontGenerator$FreeTypeFontParameter.)
+                                                       (-> .size (set! 20)))))
                 :player         (p/make-player @screen-size-ref)
                 :level          1
                 :bullets        #{}
@@ -70,7 +79,8 @@
   (update! [this screen-size delta-time]
     (let [{dead? :dead?} player]
       (cond dead?
-            (update this :player #(p/reset % screen-size))
+            (-> (update :player #(p/reset % screen-size))
+                (update :player p/lose-life))
 
             (= 0 (count asteroids))
             (-> this
@@ -88,7 +98,8 @@
     (p/draw-player player shape-renderer)
     (b/draw-bullets bullets shape-renderer)
     (a/draw-asteroids asteroids shape-renderer)
-    (part/draw-particles particles shape-renderer))
+    (part/draw-particles particles shape-renderer)
+    (p/draw-score player sprite-batch font))
 
   (handle-input [this]
     (as-> this state

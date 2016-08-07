@@ -1,13 +1,15 @@
 (ns clojuroids.player
   (:require [clojuroids.space-object :refer :all])
-  (:import [com.badlogic.gdx.math MathUtils]))
+  (:import [com.badlogic.gdx.math MathUtils]
+           [com.badlogic.gdx.graphics.g2d Batch]))
 
 (defrecord Player [space-object
                    left? right? up? max-speed acceleration deceleration
                    accelerating-timer flame
                    hit? dead?
                    hit-lines hit-lines-vector
-                   hit-timer hit-time])
+                   hit-timer hit-time
+                   score extra-lives required-score])
 
 (defn- make-ship-shape
   [player]
@@ -80,7 +82,7 @@
   [player screen-size delta-time]
   (let [{:keys [left? right? up? accelerating-timer
                 hit? hit-timer hit-time hit-lines
-                hit-lines-vector]} player]
+                hit-lines-vector score required-score]} player]
     (if hit?
       ;; update dead player
       (-> player
@@ -99,6 +101,12 @@
                                     hit-lines-vector))))
       ;; update alive player
       (as-> player p
+        ;; check extra lives
+        (if (>= score required-score)
+          (-> p
+              (update :extra-lives inc)
+              (update :required-score #(+ % 10000)))
+          p)
         ;; turning
         (cond left? (turn-left p delta-time)
               right? (turn-right p delta-time)
@@ -151,7 +159,10 @@
                   :accelerating-timer 0
                   :hit? false
                   :hit-timer 0
-                  :hit-time 2})))
+                  :hit-time 2
+                  :score 0
+                  :extra-lives 3
+                  :required-score 10000})))
 
 (defn player-hit
   [player]
@@ -182,3 +193,20 @@
     (assoc-in p [:space-object :shape] (make-ship-shape p))
     (merge p {:hit? false
               :dead? false})))
+
+(defn lose-life
+  [player]
+  (update player :extra-lives dec))
+
+(defn increment-score
+  [player n]
+  (update player :score #(+ % n)))
+
+(defn draw-score
+  [player sprite-batch font]
+  (let [[r g b a] score-color
+        {score :score} player]
+    (.setColor sprite-batch 1 1 1 1)
+    (.begin sprite-batch)
+    (.draw font sprite-batch (str score) (float 40) (float 390))
+    (.end sprite-batch)))
