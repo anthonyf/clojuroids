@@ -79,7 +79,8 @@
   (update! [this screen-size delta-time]
     (let [{dead? :dead?} player]
       (cond dead?
-            (-> (update :player #(p/reset % screen-size))
+            (-> this
+                (update :player #(p/reset % screen-size))
                 (update :player p/lose-life))
 
             (= 0 (count asteroids))
@@ -151,6 +152,7 @@
                                 {{bullet-pos :pos} :space-object} bullet]
                             (if (so/shape-contains? asteroid-shape bullet-pos)
                               (reduced (-> state
+                                           (update :player #(p/increment-score % (a/score asteroid)))
                                            (merge {:asteroids (disj asteroids asteroid)
                                                    :bullets (disj bullets bullet)})
                                            (split-asteroid asteroid)))

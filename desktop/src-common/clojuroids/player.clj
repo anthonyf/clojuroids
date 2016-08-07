@@ -204,8 +204,7 @@
 
 (defn draw-score
   [player sprite-batch font]
-  (let [[r g b a] score-color
-        {score :score} player]
+  (let [{score :score} player]
     (.setColor sprite-batch 1 1 1 1)
     (.begin sprite-batch)
     (.draw font sprite-batch (str score) (float 40) (float 390))

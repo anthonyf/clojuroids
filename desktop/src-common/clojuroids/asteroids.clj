@@ -75,3 +75,11 @@
                                                             :dpos           [(* speed (MathUtils/cos radians))
                                                                              (* speed (MathUtils/sin radians))]})})
         (update-asteroid-shape))))
+
+(defn score
+  [asteroid]
+  (let [{type :type} asteroid]
+    (case type
+      :small 100
+      :medium 50
+      :large 20)))
