@@ -4,7 +4,7 @@
            [com.badlogic.gdx.math Polygon]))
 
 (defrecord SpaceObject
-  [pos dpos radians rotation-speed size shape])
+  [pos dpos radians rotation-speed shape])
 
 (defn- wrap
   [space-object screen-size]
