@@ -6,7 +6,8 @@
             [clojuroids.asteroids :as a]
             [clojuroids.particle :as part]
             [clojuroids.key-state :as ks]
-            [clojuroids.space-object :as so])
+            [clojuroids.space-object :as so]
+            [clojuroids.jukebox :as j])
   (:import [com.badlogic.gdx.graphics.glutils ShapeRenderer]
            [com.badlogic.gdx.graphics.g2d SpriteBatch]
            [com.badlogic.gdx.graphics.g2d.freetype FreeTypeFontGenerator
@@ -153,11 +154,12 @@
                           (let [{{asteroid-shape :shape} :space-object} asteroid
                                 {{bullet-pos :pos} :space-object} bullet]
                             (if (so/shape-contains? asteroid-shape bullet-pos)
-                              (reduced (-> state
-                                           (update :player #(p/increment-score % (a/score asteroid)))
-                                           (merge {:asteroids (disj asteroids asteroid)
-                                                   :bullets (disj bullets bullet)})
-                                           (split-asteroid asteroid)))
+                              (do (j/play-sound :explode)
+                                  (reduced (-> state
+                                               (update :player #(p/increment-score % (a/score asteroid)))
+                                               (merge {:asteroids (disj asteroids asteroid)
+                                                       :bullets (disj bullets bullet)})
+                                               (split-asteroid asteroid))))
                               state)))
                         state
                         asteroids)))
@@ -173,10 +175,11 @@
       (reduce (fn [state asteroid]
                 (let [{{asteroid-shape :shape} :space-object} asteroid]
                   (if (so/shapes-intersect? player-shape asteroid-shape)
-                    (-> state
-                        (update :player #(p/player-hit %))
-                        (update :asteroids #(disj % asteroid))
-                        (split-asteroid asteroid))
+                    (do (j/play-sound :explode)
+                        (-> state
+                         (update :player #(p/player-hit %))
+                         (update :asteroids #(disj % asteroid))
+                         (split-asteroid asteroid)))
                     state)))
               state
               asteroids)

@@ -2,6 +2,7 @@
   (:require [clojuroids.key-state :refer :all]
             [clojuroids.game-state-manager :as gsm]
             [clojuroids.play-state :as ps]
+            [clojuroids.jukebox :as j]
             [clojure.stacktrace :as st])
   (:import [com.badlogic.gdx ApplicationListener Gdx]
            [com.badlogic.gdx.graphics GL30 OrthographicCamera]
@@ -31,6 +32,17 @@
           (.update @camera-ref))
 
         (.setInputProcessor Gdx/input (make-input-processor key-state-ref))
+
+        (j/load-sound! :explode "sounds/explode.ogg")
+        (j/load-sound! :extralife "sounds/extralife.ogg")
+        (j/load-sound! :largesaucer "sounds/largesaucer.ogg")
+        (j/load-sound! :pulsehigh "sounds/pulsehigh.ogg")
+        (j/load-sound! :pulselow "sounds/pulselow.ogg")
+        (j/load-sound! :saucershoot "sounds/saucershoot.ogg")
+        (j/load-sound! :shoot "sounds/shoot.ogg")
+        (j/load-sound! :smallsaucer "sounds/smallsaucer.ogg")
+        (j/load-sound! :thruster "sounds/thruster.ogg")
+
         (swap! game-state-ref gsm/set-state ps/make-play-state screen-size-ref key-state-ref))
 
       (render [this]
@@ -45,9 +57,9 @@
           (when-not (nil? @game-state-ref)
             (if (key-down? @key-state-ref Input$Keys/BACKSPACE)
               (when (not (empty? @game-states-ref))
-                    (reset! game-state-ref (first (take rewind-factor @game-states-ref)))
-                    (reset! game-states-ref (drop rewind-factor @game-states-ref))
-                    (gsm/draw @game-state-ref))
+                (reset! game-state-ref (first (take rewind-factor @game-states-ref)))
+                (reset! game-states-ref (drop rewind-factor @game-states-ref))
+                (gsm/draw @game-state-ref))
               (do (swap! game-state-ref gsm/handle-input)
                   (swap! game-state-ref gsm/update! @screen-size-ref (.getDeltaTime Gdx/graphics))
                   (gsm/draw @game-state-ref)
