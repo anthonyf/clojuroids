@@ -63,18 +63,19 @@
                       sprite-batch font]
   gsm/game-state
   (init [this]
-    (-> this
-        (merge {:shape-renderer (ShapeRenderer.)
-                :sprite-batch   (SpriteBatch.)
-                :font           (let [gen (FreeTypeFontGenerator. (.internal Gdx/files "fonts/Hyperspace Bold.ttf"))]
-                                  (.generateFont gen (doto (FreeTypeFontGenerator$FreeTypeFontParameter.)
-                                                       (-> .size (set! 20)))))
-                :player         (p/make-player @screen-size-ref)
-                :level          1
-                :bullets        #{}
-                :asteroids      #{}
-                :particles      ()})
-        (spawn-asteroids)))
+    (let [[w h] @screen-size-ref]
+      (-> this
+          (merge {:shape-renderer (ShapeRenderer.)
+                  :sprite-batch   (SpriteBatch.)
+                  :font           (let [gen (FreeTypeFontGenerator. (.internal Gdx/files "fonts/Hyperspace Bold.ttf"))]
+                                    (.generateFont gen (doto (FreeTypeFontGenerator$FreeTypeFontParameter.)
+                                                         (-> .size (set! 20)))))
+                  :player         (p/make-player :pos [(/ w 2)(/ h 2)])
+                  :level          1
+                  :bullets        #{}
+                  :asteroids      #{}
+                  :particles      ()})
+          (spawn-asteroids))))
 
   (update! [this screen-size delta-time]
     (let [{dead? :dead?} player]
@@ -100,7 +101,8 @@
     (b/draw-bullets bullets shape-renderer)
     (a/draw-asteroids asteroids shape-renderer)
     (part/draw-particles particles shape-renderer)
-    (p/draw-score player sprite-batch font))
+    (p/draw-score player sprite-batch font)
+    (p/draw-player-lives player shape-renderer))
 
   (handle-input [this]
     (as-> this state

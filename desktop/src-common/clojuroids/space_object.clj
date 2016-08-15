@@ -59,12 +59,13 @@
       (wrap screen-size)))
 
 (defn make-space-object
-  [pos radians]
-  (map->SpaceObject {:pos pos
-                     :dpos [0 0]
-                     :radians radians
-                     :rotation-speed 3
-                     :shape []}))
+  [& {:keys [pos dpos radians rotation-speed shape] :or
+      {pos [0 0]
+       dpos [0 0]
+       radians 0
+       rotation-speed 3
+       shape []}}]
+  (->SpaceObject pos dpos radians rotation-speed shape))
 
 (defn shape-contains?
   [shape [x y]]

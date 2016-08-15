@@ -12,38 +12,37 @@
                    score extra-lives required-score])
 
 (defn- make-ship-shape
+  [[x y] radians]
+  [[(+ x (* (MathUtils/cos radians) 8))
+    (+ y (* (MathUtils/sin radians) 8))]
+   [(+ x (* (MathUtils/cos (- radians (/ (* 4 Math/PI) 5))) 8))
+    (+ y (* (MathUtils/sin (- radians (/ (* 4 Math/PI) 5))) 8))]
+   [(+ x (* (MathUtils/cos (+ radians Math/PI)) 5))
+    (+ y (* (MathUtils/sin (+ radians Math/PI)) 5))]
+   [(+ x (* (MathUtils/cos (+ radians (/ (* 4 Math/PI) 5))) 8))
+    (+ y (* (MathUtils/sin (+ radians (/ (* 4 Math/PI) 5))) 8))]])
+
+(defn- update-ship-shape
   [player]
   (let [{:keys [space-object]} player
-        {:keys [pos radians]} space-object
-        [x y] pos]
-    [[(+ x (* (MathUtils/cos radians) 8))
-      (+ y (* (MathUtils/sin radians) 8))]
-     [(+ x (* (MathUtils/cos (- radians (/ (* 4 Math/PI) 5))) 8))
-      (+ y (* (MathUtils/sin (- radians (/ (* 4 Math/PI) 5))) 8))]
-     [(+ x (* (MathUtils/cos (+ radians Math/PI)) 5))
-      (+ y (* (MathUtils/sin (+ radians Math/PI)) 5))]
-     [(+ x (* (MathUtils/cos (+ radians (/ (* 4 Math/PI) 5))) 8))
-      (+ y (* (MathUtils/sin (+ radians (/ (* 4 Math/PI) 5))) 8))]]))
-
+        {:keys [pos radians]} space-object]
+    (assoc-in player [:space-object :shape]
+              (make-ship-shape pos radians))))
 
 (defn- make-flame-shape
-  [player]
-  (let [{:keys [space-object accelerating-timer]} player
-        {:keys [pos radians]} space-object
-        [x y] pos]
-    [[(+ x (* (MathUtils/cos (- radians (/ (* 5 Math/PI) 6))) 5))
-      (+ y (* (MathUtils/sin (- radians (/ (* 5 Math/PI) 6))) 5))]
-     [(+ x (* (MathUtils/cos (- radians Math/PI))
-              (+ 6 (* accelerating-timer 50))))
-      (+ y (* (MathUtils/sin (- radians Math/PI))
-              (+ 6 (* accelerating-timer 50))))]
-     [(+ x (* (MathUtils/cos (+ radians (/ (* 5 Math/PI) 6))) 5))
-      (+ y (* (MathUtils/sin (+ radians (/ (* 5 Math/PI) 6))) 5))]]))
-
+  [[x y] radians accelerating-timer]
+  [[(+ x (* (MathUtils/cos (- radians (/ (* 5 Math/PI) 6))) 5))
+    (+ y (* (MathUtils/sin (- radians (/ (* 5 Math/PI) 6))) 5))]
+   [(+ x (* (MathUtils/cos (- radians Math/PI))
+            (+ 6 (* accelerating-timer 50))))
+    (+ y (* (MathUtils/sin (- radians Math/PI))
+            (+ 6 (* accelerating-timer 50))))]
+   [(+ x (* (MathUtils/cos (+ radians (/ (* 5 Math/PI) 6))) 5))
+    (+ y (* (MathUtils/sin (+ radians (/ (* 5 Math/PI) 6))) 5))]])
 
 (defn- accelerate
   [player delta-time]
-  (let [{:keys [space-object acceleration]} player
+  (let [{:keys [acceleration space-object]} player
         {[dx dy] :dpos
          :keys [radians]} space-object]
     (assoc-in player [:space-object :dpos]
@@ -64,6 +63,23 @@
                                        (* (/ dy vec) max-speed)]
                     :else [dx dy]))))
 
+(defn- update-acceleration
+  [player delta-time]
+  (let [{:keys [up?]} player]
+    (if up?
+      (as-> player p
+        (let [{:keys [space-object acceleration accelerating-timer]} p
+              {[dx dy] :dpos
+               :keys [pos radians]} space-object]
+          (assoc p :flame (make-flame-shape pos radians accelerating-timer)))
+        (accelerate p delta-time)
+        (update p :accelerating-timer
+                #(let [at (+ % delta-time)]
+                    (if (> at 0.1)
+                      0
+                      at))))
+      player)))
+
 (defn- turn
   [player delta-time sign]
   (let [{{:keys [rotation-speed]} :space-object} player]
@@ -79,59 +95,62 @@
   [player delta-time]
   (turn player delta-time -))
 
+(defn- update-extra-lives
+  [player]
+  (let [{:keys [score required-score]} player]
+    (if (>= score required-score)
+      (-> player
+          (update :extra-lives inc)
+          (update :required-score #(+ % 10000)))
+      player)))
+
+(defn- update-dead-player
+  [player delta-time]
+  (-> player
+      ;; handle expiring hit timer
+      ((fn [player]
+         (let [{:keys [hit-timer hit-time]} player]
+           (merge player
+                  (let [hit-timer (+ hit-timer delta-time)]
+                    (if (> hit-timer hit-time)
+                      {:hit-timer 0
+                       :dead? true}
+                      {:hit-timer hit-timer}))))))
+      ;; player explode animation
+      ((fn [player]
+         (let [{:keys [hit-lines-vector]} player]
+           (update player :hit-lines (fn [hit-lines]
+                                       (map (fn [[[x1 y1] [x2 y2]] [vx vy]]
+                                              [[(+ x1 (* vx 10 delta-time))
+                                                (+ y1 (* vy 10 delta-time))]
+                                               [(+ x2 (* vx 10 delta-time))
+                                                (+ y2 (* vy 10 delta-time))]])
+                                            hit-lines
+                                            hit-lines-vector))))))))
+
 (defn update-player!
   [player screen-size delta-time]
-  (let [{:keys [left? right? up? accelerating-timer
-                hit? hit-timer hit-time hit-lines
-                hit-lines-vector score required-score]} player]
+  (let [{:keys [hit? space-object]} player]
     (if hit?
       ;; update dead player
-      (-> player
-          (merge (let [hit-timer (+ hit-timer delta-time)]
-                   (if (> hit-timer hit-time)
-                     {:hit-timer 0
-                      :dead? true}
-                     {:hit-timer hit-timer})))
-          (update :hit-lines (fn [hit-lines]
-                               (map (fn [[[x1 y1] [x2 y2]] [vx vy]]
-                                      [[(+ x1 (* vx 10 delta-time))
-                                        (+ y1 (* vy 10 delta-time))]
-                                       [(+ x2 (* vx 10 delta-time))
-                                        (+ y2 (* vy 10 delta-time))]])
-                                    hit-lines
-                                    hit-lines-vector))))
+      (update-dead-player player delta-time)
       ;; update alive player
       (as-> player p
         ;; check extra lives
-        (if (>= score required-score)
-          (-> p
-              (update :extra-lives inc)
-              (update :required-score #(+ % 10000)))
-          p)
+        (update-extra-lives p)
         ;; turning
-        (cond left? (turn-left p delta-time)
-              right? (turn-right p delta-time)
-              :else p)
+        (let [{:keys [left? right?]} p]
+          (cond left? (turn-left p delta-time)
+                     right? (turn-right p delta-time)
+                     :else p))
         ;; acceleration
-        (if up?
-          (-> p
-              (accelerate delta-time)
-              (assoc :accelerating-timer
-                     (as-> accelerating-timer at
-                       (+ at delta-time)
-                       (if (> at 0.1)
-                         0
-                         at))))
-          p)
+        (update-acceleration p delta-time)
         ;; deceleration
-        (decelerate p  delta-time)
+        (decelerate p delta-time)
         ;; update shapes
-        (assoc-in p [:space-object :shape] (make-ship-shape p))
-        (assoc p :flame (if up?
-                          (make-flame-shape p)
-                          []))
+        (update-ship-shape p)
         ;; update space-object
-        (assoc p :space-object (update-space-object! (:space-object p) screen-size delta-time))))))
+        (update p :space-object #(update-space-object! % screen-size delta-time))))))
 
 (def player-color [1 1 1 1])
 
@@ -145,11 +164,12 @@
             (draw-shape shape-renderer flame player-color))))))
 
 (defn make-player
-  [[screen-width screen-height]]
-  (let [radians (/ Math/PI 2)
-        pos [(/ screen-width 2)
-             (/ screen-height 2)]]
-    (map->Player {:space-object (make-space-object pos radians)
+  [& {:keys [pos]
+      :or {pos [0 0]}}]
+  (let [radians (/ Math/PI 2)]
+    (map->Player {:space-object (make-space-object :pos pos
+                                                   :radians radians
+                                                   :shape (make-ship-shape pos radians))
                   :left? false
                   :right? false
                   :up? false
@@ -191,9 +211,10 @@
   [player [screen-width screen-height]]
   (as-> player p
     (assoc-in p [:space-object :pos] [(/ screen-width 2) (/ screen-height 2)])
-    (assoc-in p [:space-object :shape] (make-ship-shape p))
-    (merge p {:hit? false
-              :dead? false})))
+    (update-ship-shape p)
+    (merge p
+           {:hit? false
+            :dead? false})))
 
 (defn lose-life
   [player]
@@ -210,3 +231,10 @@
     (.begin sprite-batch)
     (.draw font sprite-batch (str score) (float 40) (float 390))
     (.end sprite-batch)))
+
+(defn draw-player-lives
+  [player shape-renderer]
+  (let [{:keys [extra-lives]} player]
+    (dotimes [i extra-lives]
+      (let [player (make-player :pos [(+ 40 (* i 10)) 360])]
+        (draw-player player shape-renderer)))))
