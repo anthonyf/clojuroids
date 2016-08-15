@@ -66,9 +66,10 @@
 
 (defn- turn
   [player delta-time sign]
-  (let [{{:keys [radians rotation-speed]} :space-object} player]
-    (assoc-in player [:space-object :radians]
-              (sign radians (* rotation-speed delta-time)))))
+  (let [{{:keys [rotation-speed]} :space-object} player]
+    (update-in player [:space-object :radians]
+               (fn [radians]
+                 (sign radians (* rotation-speed delta-time))))))
 
 (defn- turn-left
   [player delta-time]
