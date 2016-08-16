@@ -1,5 +1,6 @@
 (ns clojuroids.player
-  (:require [clojuroids.space-object :refer :all])
+  (:require [clojuroids.space-object :refer :all]
+            [clojuroids.jukebox :as j])
   (:import [com.badlogic.gdx.math MathUtils]
            [com.badlogic.gdx.graphics.g2d Batch]))
 
@@ -95,13 +96,16 @@
   [player delta-time]
   (turn player delta-time -))
 
+(def extra-life-increment 10000)
+
 (defn- update-extra-lives
   [player]
   (let [{:keys [score required-score]} player]
     (if (>= score required-score)
-      (-> player
-          (update :extra-lives inc)
-          (update :required-score #(+ % 10000)))
+      (do (j/play-sound :extralife)
+          (-> player
+              (update :extra-lives inc)
+              (update :required-score #(+ % extra-life-increment))))
       player)))
 
 (defn- update-dead-player
@@ -183,7 +187,7 @@
                   :hit-time 2
                   :score 0
                   :extra-lives 3
-                  :required-score 10000})))
+                  :required-score extra-life-increment})))
 
 (defn player-hit
   [player]
