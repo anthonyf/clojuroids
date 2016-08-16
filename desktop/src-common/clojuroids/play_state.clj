@@ -32,7 +32,7 @@
 
 (defn- spawn-asteroids
   [state]
-  (let [{:keys [level player screen-size-ref]} state
+  (let [{:keys [level player screen-size-ref max-delay]} state
         player-pos (get-in player [:space-object :pos])
         num-to-spawn (+ 4 (- level 1))
         total-asteroids (* num-to-spawn 7)
@@ -42,7 +42,8 @@
     (merge state
            {:asteroids asteroids
             :total-asteroids total-asteroids
-            :num-asteroids-left total-asteroids})))
+            :num-asteroids-left total-asteroids
+            :current-delay max-delay})))
 
 (def ^:const max-bullets 4)
 
@@ -59,24 +60,50 @@
 
 (declare handle-collisions)
 
+(defn play-background-music
+  [state delta-time]
+  (-> state
+      (update :bg-timer #(+ % delta-time))
+      ((fn [state]
+         (let [{:keys [player bg-timer current-delay play-low-pulse?]} state
+               {:keys [hit?]} player]
+           (if (and (not hit?) (>= bg-timer current-delay))
+             (do (j/play-sound (if play-low-pulse?
+                                 :pulselow
+                                 :pulsehigh))
+                 (-> state
+                     (update :play-low-pulse? #(not %))
+                     (assoc :bg-timer 0)))
+             state))))))
+
 (defrecord PlayState [screen-size-ref key-state-ref shape-renderer player
                       bullets asteroids particles
                       level total-asteroids num-asteroids-left
-                      sprite-batch font]
+                      sprite-batch font
+                      max-delay min-delay current-delay
+                      bg-timer
+                      play-low-pulse?]
   gsm/game-state
   (init [this]
-    (let [[w h] @screen-size-ref]
+    (let [[w h] @screen-size-ref
+          max-delay 1]
       (-> this
-          (merge {:shape-renderer (ShapeRenderer.)
-                  :sprite-batch   (SpriteBatch.)
-                  :font           (let [gen (FreeTypeFontGenerator. (.internal Gdx/files "fonts/Hyperspace Bold.ttf"))]
-                                    (.generateFont gen (doto (FreeTypeFontGenerator$FreeTypeFontParameter.)
-                                                         (-> .size (set! 20)))))
-                  :player         (p/make-player :pos [(/ w 2)(/ h 2)])
-                  :level          1
-                  :bullets        #{}
-                  :asteroids      #{}
-                  :particles      ()})
+          (merge {:shape-renderer  (ShapeRenderer.)
+                  :sprite-batch    (SpriteBatch.)
+                  :font            (let [gen (FreeTypeFontGenerator. (.internal Gdx/files "fonts/Hyperspace Bold.ttf"))]
+                                     (.generateFont gen (doto (FreeTypeFontGenerator$FreeTypeFontParameter.)
+                                                          (-> .size (set! 20)))))
+                  :player          (p/make-player :pos [(/ w 2)(/ h 2)])
+                  :level           1
+                  :bullets         #{}
+                  :asteroids       #{}
+                  :particles       ()
+                  ;; set up bg music
+                  :max-delay       max-delay
+                  :min-delay       0.25
+                  :current-deley   max-delay
+                  :bg-timer        max-delay
+                  :play-low-pulse? true})
           (spawn-asteroids))))
 
   (update! [this screen-size delta-time]
@@ -96,7 +123,8 @@
                       (update :bullets #(b/update-bullets % screen-size delta-time))
                       (update :asteroids #(a/update-asteroids % screen-size delta-time))
                       (update :particles #(part/update-particles % screen-size delta-time))
-                      (handle-collisions)))))
+                      (handle-collisions)
+                      (play-background-music delta-time)))))
 
   (draw [this]
     (p/draw-player player shape-renderer)
@@ -143,6 +171,12 @@
   (-> state
       (create-particles (-> asteroid :space-object :pos))
       (update :num-asteroids-left dec)
+      ((fn [state]
+         (let [{:keys [max-delay min-delay num-asteroids-left total-asteroids]} state]
+           (assoc state :current-delay (+ (/ (* (- max-delay min-delay)
+                                                num-asteroids-left)
+                                             total-asteroids)
+                                          min-delay)))))
       (update :asteroids #(let [{type :type
                                  {:keys [pos]} :space-object} asteroid]
                             (if (contains? #{:large :medium} type)
