@@ -76,7 +76,7 @@
                      (assoc :bg-timer 0)))
              state))))))
 
-(defrecord PlayState [screen-size-ref key-state-ref shape-renderer player
+(defrecord PlayState [screen-size-ref shape-renderer player
                       bullets asteroids particles
                       level total-asteroids num-asteroids-left
                       sprite-batch font
@@ -137,26 +137,25 @@
   (handle-input [this]
     (as-> this state
       (assoc state :player (-> player
-                               (assoc :left? (ks/key-down? @key-state-ref Input$Keys/LEFT))
-                               (assoc :right? (ks/key-down? @key-state-ref Input$Keys/RIGHT))
+                               (assoc :left? (ks/key-down? Input$Keys/LEFT))
+                               (assoc :right? (ks/key-down? Input$Keys/RIGHT))
                                ((fn [player]
                                   (let [{:keys [up? hit?]} player
-                                        key-up? (and (ks/key-down? @key-state-ref Input$Keys/UP)
+                                        key-up? (and (ks/key-down? Input$Keys/UP)
                                                      (not hit?))]
                                     (cond (and key-up?
                                                (not up?)) (j/loop-sound :thruster)
                                           (not key-up?)   (j/stop-sound :thruster))
                                     (assoc player :up? key-up?))))))
-      (if (ks/key-pressed? @key-state-ref Input$Keys/SPACE)
+      (if (ks/key-pressed? Input$Keys/SPACE)
         (shoot state)
         state)))
 
   (dispose [this]))
 
 (defn make-play-state
-  [screen-size-ref key-state-ref]
-  (map->PlayState {:screen-size-ref screen-size-ref
-                   :key-state-ref key-state-ref}))
+  [screen-size-ref]
+  (map->PlayState {:screen-size-ref screen-size-ref}))
 
 (defn- create-particles
   [state pos]
