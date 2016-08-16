@@ -48,6 +48,7 @@
 
 (defn shoot
   [state]
+  (j/play-sound :shoot)
   (let [{:keys [player bullets]} state
         {:keys [space-object]} player
         {:keys [pos radians]} space-object]
