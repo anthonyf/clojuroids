@@ -1,24 +1,24 @@
 (ns clojuroids.core
   (:require [clojuroids.common :as c]
-            [clojuroids.key-state :refer :all]
+            [clojuroids.key-state :as k]
             [clojuroids.game-state-manager :as gsm]
             [clojuroids.play-state :as ps]
-            [clojuroids.jukebox :as j]
-            [clojure.stacktrace :as st])
+            [clojuroids.jukebox :as j])
   (:import [com.badlogic.gdx ApplicationListener Gdx]
-           [com.badlogic.gdx.graphics GL30 OrthographicCamera]
-           (com.badlogic.gdx Input$Keys)))
+           [com.badlogic.gdx.graphics GL30 OrthographicCamera]))
 
-(defprotocol Restartable
-  (restart [this]))
-
-(def rewind-factor 3)
+(def sounds [[:explode "sounds/explode.ogg"]
+             [:extralife "sounds/extralife.ogg"]
+             [:largesaucer "sounds/largesaucer.ogg"]
+             [:pulsehigh "sounds/pulsehigh.ogg"]
+             [:pulselow "sounds/pulselow.ogg"]
+             [:saucershoot "sounds/saucershoot.ogg"]
+             [:shoot "sounds/shoot.ogg"]
+             [:smallsaucer "sounds/smallsaucer.ogg"]
+             [:thruster "sounds/thruster.ogg"]])
 
 (def app-listener
-  (let [camera-ref (atom nil)
-        game-state-ref (atom nil)
-        game-states-ref (atom '())
-        restart? (atom false)]
+  (let [camera-ref (atom nil)]
     (reify
       ApplicationListener
 
@@ -28,49 +28,20 @@
           (.translate @camera-ref (/ width 2) (/ height 2))
           (.update @camera-ref))
 
-        (init-key-state)
+        (k/init-key-state)
 
-        (j/load-sound! :explode "sounds/explode.ogg")
-        (j/load-sound! :extralife "sounds/extralife.ogg")
-        (j/load-sound! :largesaucer "sounds/largesaucer.ogg")
-        (j/load-sound! :pulsehigh "sounds/pulsehigh.ogg")
-        (j/load-sound! :pulselow "sounds/pulselow.ogg")
-        (j/load-sound! :saucershoot "sounds/saucershoot.ogg")
-        (j/load-sound! :shoot "sounds/shoot.ogg")
-        (j/load-sound! :smallsaucer "sounds/smallsaucer.ogg")
-        (j/load-sound! :thruster "sounds/thruster.ogg")
+        (doseq [[sym path] sounds]
+          (j/load-sound! sym path))
 
-        (swap! game-state-ref gsm/set-state ps/make-play-state))
+        (gsm/set-state! (ps/make-play-state)))
 
       (render [this]
         (.glClearColor Gdx/gl 0 0 0 1)
         (.glClear Gdx/gl GL30/GL_COLOR_BUFFER_BIT)
-
-        (when @restart?
-          (reset! restart? false)
-          (swap! game-state-ref gsm/set-state ps/make-play-state))
-
-        (try
-          (when-not (nil? @game-state-ref)
-            (if (key-down? Input$Keys/BACKSPACE)
-              (when (not (empty? @game-states-ref))
-                (reset! game-state-ref (first (take rewind-factor @game-states-ref)))
-                (reset! game-states-ref (drop rewind-factor @game-states-ref))
-                (gsm/draw @game-state-ref))
-              (do (swap! game-state-ref gsm/handle-input)
-                  (swap! game-state-ref gsm/update! (.getDeltaTime Gdx/graphics))
-                  (gsm/draw @game-state-ref)
-                  (update-key-state)
-                  (swap! game-states-ref conj @game-state-ref))))
-          (catch Exception e
-            (reset! game-state-ref nil)
-            (st/print-cause-trace e))))
+        (gsm/update-game-state)
+        (k/update-key-state))
 
       (resize [this width height])
       (pause [this])
       (resume [this])
-      (dispose [this])
-
-      Restartable
-      (restart [this]
-        (reset! restart? true)))))
+      (dispose [this]))))

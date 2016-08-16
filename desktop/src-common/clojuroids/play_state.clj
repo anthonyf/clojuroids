@@ -50,13 +50,15 @@
 
 (defn shoot
   [state]
-  (j/play-sound :shoot)
   (let [{:keys [player bullets]} state
-        {:keys [space-object]} player
+        {:keys [space-object hit?]} player
         {:keys [pos radians]} space-object]
-    (if (< (count bullets) max-bullets)
-      (update state :bullets #(conj %
-                                    (b/make-bullet pos radians)))
+    (if (and (< (count bullets) max-bullets)
+             (not hit?))
+      (do
+        (j/play-sound :shoot)
+        (update state :bullets #(conj %
+                                      (b/make-bullet pos radians))))
       state)))
 
 (declare handle-collisions)
@@ -84,7 +86,7 @@
                       max-delay min-delay current-delay
                       bg-timer
                       play-low-pulse?]
-  gsm/game-state
+  gsm/GameState
   (init [this]
     (let [[w h] c/screen-size
           max-delay 1]
