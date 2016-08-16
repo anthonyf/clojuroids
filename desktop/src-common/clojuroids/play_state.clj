@@ -111,7 +111,14 @@
       (assoc state :player (-> player
                                (assoc :left? (ks/key-down? @key-state-ref Input$Keys/LEFT))
                                (assoc :right? (ks/key-down? @key-state-ref Input$Keys/RIGHT))
-                               (assoc :up? (ks/key-down? @key-state-ref Input$Keys/UP))))
+                               ((fn [player]
+                                  (let [{:keys [up? hit?]} player
+                                        key-up? (and (ks/key-down? @key-state-ref Input$Keys/UP)
+                                                     (not hit?))]
+                                    (cond (and key-up?
+                                               (not up?)) (j/loop-sound :thruster)
+                                          (not key-up?)   (j/stop-sound :thruster))
+                                    (assoc player :up? key-up?))))))
       (if (ks/key-pressed? @key-state-ref Input$Keys/SPACE)
         (shoot state)
         state)))
