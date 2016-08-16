@@ -1,5 +1,6 @@
 (ns clojuroids.player
-  (:require [clojuroids.space-object :refer :all]
+  (:require [clojuroids.common :as c]
+            [clojuroids.space-object :refer :all]
             [clojuroids.jukebox :as j])
   (:import [com.badlogic.gdx.math MathUtils]
            [com.badlogic.gdx.graphics.g2d Batch]))
@@ -133,7 +134,7 @@
                                             hit-lines-vector))))))))
 
 (defn update-player!
-  [player screen-size delta-time]
+  [player delta-time]
   (let [{:keys [hit? space-object]} player]
     (if hit?
       ;; update dead player
@@ -154,7 +155,7 @@
         ;; update shapes
         (update-ship-shape p)
         ;; update space-object
-        (update p :space-object #(update-space-object! % screen-size delta-time))))))
+        (update p :space-object #(update-space-object! % delta-time))))))
 
 (def player-color [1 1 1 1])
 
@@ -212,13 +213,14 @@
       player)))
 
 (defn reset
-  [player [screen-width screen-height]]
-  (as-> player p
-    (assoc-in p [:space-object :pos] [(/ screen-width 2) (/ screen-height 2)])
-    (update-ship-shape p)
-    (merge p
-           {:hit? false
-            :dead? false})))
+  [player]
+  (let [[w h] c/screen-size]
+    (as-> player p
+      (assoc-in p [:space-object :pos] [(/ w 2) (/ h 2)])
+      (update-ship-shape p)
+      (merge p
+             {:hit? false
+              :dead? false}))))
 
 (defn lose-life
   [player]

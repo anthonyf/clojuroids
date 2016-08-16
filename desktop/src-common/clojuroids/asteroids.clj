@@ -22,18 +22,18 @@
                    angles dists))))
 
 (defn- update-asteroid
-  [asteroid screen-size delta-time]
+  [asteroid delta-time]
   (let [{space-object :space-object} asteroid
         {:keys [rotation-speed]} space-object]
     (-> asteroid
-      (assoc :space-object (so/update-space-object! space-object screen-size delta-time))
+      (assoc :space-object (so/update-space-object! space-object delta-time))
       (update-asteroid-shape)
       (assoc :radians (* rotation-speed delta-time)))))
 
 (defn update-asteroids
-  [asteroids screen-size delta-time]
+  [asteroids delta-time]
   (->> asteroids
-       (map #(update-asteroid % screen-size delta-time))
+       (map #(update-asteroid % delta-time))
        (remove :remove?)
        (into #{})))
 

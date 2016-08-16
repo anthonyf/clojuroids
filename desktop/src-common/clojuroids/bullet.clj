@@ -30,19 +30,19 @@
       (- y 1)]]))
 
 (defn update-bullet
-  [bullet screen-size delta-time]
+  [bullet delta-time]
   (as-> bullet b
         (update b :space-object #(-> %
-                                     (so/update-space-object! screen-size delta-time)
+                                     (so/update-space-object! delta-time)
                                      (assoc :shape (make-bullet-shape b))))
         (update b :life-timer #(+ % delta-time))
         (assoc b :remove? (let [{:keys [life-timer life-time]} b]
                             (> life-timer life-time)))))
 
 (defn update-bullets
-  [bullets screen-size delta-time]
+  [bullets delta-time]
   (->> bullets
-       (map #(update-bullet % screen-size delta-time))
+       (map #(update-bullet % delta-time))
        (remove :remove?)
        (into #{})))
 

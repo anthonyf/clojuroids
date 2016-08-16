@@ -1,5 +1,6 @@
 (ns clojuroids.play-state
   (:require [clojure.set :as set]
+            [clojuroids.common :as c]
             [clojuroids.game-state-manager :as gsm]
             [clojuroids.player :as p]
             [clojuroids.bullet :as b]
@@ -18,8 +19,8 @@
   (:gen-class))
 
 (defn- random-asteroid-location
-  [screen-size player-pos]
-  (let [[screen-width screen-height] screen-size
+  [player-pos]
+  (let [[screen-width screen-height] c/screen-size
         [px py] player-pos
         [ax ay] [(MathUtils/random screen-width)
                  (MathUtils/random screen-height)]
@@ -27,17 +28,17 @@
                  (- ay py)]
         dist (Math/sqrt (+ (* dx dx) (* dy dy)))]
     (if (< dist 100)
-      (recur screen-size player-pos)
+      (recur player-pos)
       [ax ay])))
 
 (defn- spawn-asteroids
   [state]
-  (let [{:keys [level player screen-size-ref max-delay]} state
+  (let [{:keys [level player max-delay]} state
         player-pos (get-in player [:space-object :pos])
         num-to-spawn (+ 4 (- level 1))
         total-asteroids (* num-to-spawn 7)
         asteroids (for [_ (range num-to-spawn)]
-                    (a/make-asteroid (random-asteroid-location @screen-size-ref player-pos)
+                    (a/make-asteroid (random-asteroid-location player-pos)
                                      :large))]
     (merge state
            {:asteroids asteroids
@@ -76,7 +77,7 @@
                      (assoc :bg-timer 0)))
              state))))))
 
-(defrecord PlayState [screen-size-ref shape-renderer player
+(defrecord PlayState [shape-renderer player
                       bullets asteroids particles
                       level total-asteroids num-asteroids-left
                       sprite-batch font
@@ -85,7 +86,7 @@
                       play-low-pulse?]
   gsm/game-state
   (init [this]
-    (let [[w h] @screen-size-ref
+    (let [[w h] c/screen-size
           max-delay 1]
       (-> this
           (merge {:shape-renderer  (ShapeRenderer.)
@@ -106,11 +107,11 @@
                   :play-low-pulse? true})
           (spawn-asteroids))))
 
-  (update! [this screen-size delta-time]
+  (update! [this delta-time]
     (let [{dead? :dead?} player]
       (cond dead?
             (-> this
-                (update :player #(p/reset % screen-size))
+                (update :player #(p/reset %))
                 (update :player p/lose-life))
 
             (= 0 (count asteroids))
@@ -119,10 +120,10 @@
                 (spawn-asteroids))
 
             :else (-> this
-                      (update :player #(p/update-player! % screen-size delta-time))
-                      (update :bullets #(b/update-bullets % screen-size delta-time))
-                      (update :asteroids #(a/update-asteroids % screen-size delta-time))
-                      (update :particles #(part/update-particles % screen-size delta-time))
+                      (update :player #(p/update-player! % delta-time))
+                      (update :bullets #(b/update-bullets % delta-time))
+                      (update :asteroids #(a/update-asteroids % delta-time))
+                      (update :particles #(part/update-particles % delta-time))
                       (handle-collisions)
                       (play-background-music delta-time)))))
 
@@ -154,8 +155,8 @@
   (dispose [this]))
 
 (defn make-play-state
-  [screen-size-ref]
-  (map->PlayState {:screen-size-ref screen-size-ref}))
+  []
+  (map->PlayState {}))
 
 (defn- create-particles
   [state pos]

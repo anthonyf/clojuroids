@@ -1,5 +1,6 @@
 (ns clojuroids.core
-  (:require [clojuroids.key-state :refer :all]
+  (:require [clojuroids.common :as c]
+            [clojuroids.key-state :refer :all]
             [clojuroids.game-state-manager :as gsm]
             [clojuroids.play-state :as ps]
             [clojuroids.jukebox :as j]
@@ -15,7 +16,6 @@
 
 (def app-listener
   (let [camera-ref (atom nil)
-        screen-size-ref (atom [])
         game-state-ref (atom nil)
         game-states-ref (atom '())
         restart? (atom false)]
@@ -23,9 +23,7 @@
       ApplicationListener
 
       (create [this]
-        (reset! screen-size-ref [(.getWidth Gdx/graphics)
-                                 (.getHeight Gdx/graphics)])
-        (let [[width height] @screen-size-ref]
+        (let [[width height] c/screen-size]
           (reset! camera-ref (OrthographicCamera. width height))
           (.translate @camera-ref (/ width 2) (/ height 2))
           (.update @camera-ref))
@@ -42,7 +40,7 @@
         (j/load-sound! :smallsaucer "sounds/smallsaucer.ogg")
         (j/load-sound! :thruster "sounds/thruster.ogg")
 
-        (swap! game-state-ref gsm/set-state ps/make-play-state screen-size-ref))
+        (swap! game-state-ref gsm/set-state ps/make-play-state))
 
       (render [this]
         (.glClearColor Gdx/gl 0 0 0 1)
@@ -50,7 +48,7 @@
 
         (when @restart?
           (reset! restart? false)
-          (swap! game-state-ref gsm/set-state ps/make-play-state screen-size-ref))
+          (swap! game-state-ref gsm/set-state ps/make-play-state))
 
         (try
           (when-not (nil? @game-state-ref)
@@ -60,7 +58,7 @@
                 (reset! game-states-ref (drop rewind-factor @game-states-ref))
                 (gsm/draw @game-state-ref))
               (do (swap! game-state-ref gsm/handle-input)
-                  (swap! game-state-ref gsm/update! @screen-size-ref (.getDeltaTime Gdx/graphics))
+                  (swap! game-state-ref gsm/update! (.getDeltaTime Gdx/graphics))
                   (gsm/draw @game-state-ref)
                   (update-key-state)
                   (swap! game-states-ref conj @game-state-ref))))

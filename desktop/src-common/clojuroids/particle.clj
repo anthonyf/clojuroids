@@ -23,17 +23,17 @@
       :remove? false})))
 
 (defn update-particle
-  [particle screen-size delta-time]
+  [particle delta-time]
   (as-> particle p
-    (update p :space-object #(so/update-space-object! % screen-size delta-time))
+    (update p :space-object #(so/update-space-object! % delta-time))
     (update p :timer #(+ % delta-time))
     (assoc p :remove? (let [{:keys [timer time]} p]
                         (> timer time)))))
 
 (defn update-particles
-  [particles screen-size delta-time]
+  [particles delta-time]
   (->> particles
-       (map #(update-particle % screen-size delta-time))
+       (map #(update-particle % delta-time))
        (remove :remove?)))
 
 (def particle-color [1 1 1 1])

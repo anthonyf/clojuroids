@@ -1,5 +1,6 @@
 (ns clojuroids.core.desktop-launcher
-  (:require [clojuroids.core :refer :all])
+  (:require [clojuroids.core :refer :all]
+            [clojuroids.common :as c])
   (:import [com.badlogic.gdx.backends.lwjgl
             LwjglApplication
             LwjglApplicationConfiguration]
@@ -9,10 +10,11 @@
 
 (defn -main
   []
-  (let [config (doto (LwjglApplicationConfiguration.)
+  (let [[width height] c/screen-size
+        config (doto (LwjglApplicationConfiguration.)
                  (-> .title (set! "clojuroids"))
-                 (-> .width (set! 500))
-                 (-> .height (set! 400))
+                 (-> .width (set! width))
+                 (-> .height (set! height))
                  (-> .resizable (set! false)))]
     (LwjglApplication. app-listener config)
     (Keyboard/enableRepeatEvents true)))

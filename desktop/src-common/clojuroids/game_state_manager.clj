@@ -1,11 +1,10 @@
-(ns clojuroids.game-state-manager
-  )
+(ns clojuroids.game-state-manager)
 
 (defprotocol game-state
   "protocol for game states"
   (init [this])
   (draw [this])
-  (update! [this screen-size delta-time])
+  (update! [this delta-time])
   (handle-input [this])
   (dispose [this]))
 

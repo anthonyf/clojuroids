@@ -1,4 +1,5 @@
 (ns clojuroids.space-object
+  (:require [clojuroids.common :as c])
   (:import [com.badlogic.gdx.graphics.glutils
             ShapeRenderer ShapeRenderer$ShapeType]
            [com.badlogic.gdx.math Polygon]))
@@ -7,8 +8,8 @@
   [pos dpos radians rotation-speed shape])
 
 (defn- wrap
-  [space-object screen-size]
-  (let [[screen-width screen-height] screen-size
+  [space-object]
+  (let [[screen-width screen-height] c/screen-size
         {[x y] :pos} space-object]
     (assoc space-object :pos
            [(cond (< x 0) screen-width
@@ -53,10 +54,10 @@
     (draw-shape shape-renderer shape color)))
 
 (defn update-space-object!
-  [space-object screen-size delta-time]
+  [space-object delta-time]
   (-> space-object
       (move delta-time)
-      (wrap screen-size)))
+      (wrap)))
 
 (defn make-space-object
   [& {:keys [pos dpos radians rotation-speed shape] :or
