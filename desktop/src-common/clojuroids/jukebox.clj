@@ -19,7 +19,7 @@
 
 (defn stop-sound
   [name]
-  (.loop (name @sounds)))
+  (.stop (name @sounds)))
 
 (defn stop-all
   [name]
