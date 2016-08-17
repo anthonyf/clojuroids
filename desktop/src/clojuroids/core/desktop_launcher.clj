@@ -12,7 +12,7 @@
   []
   (let [[width height] c/screen-size
         config (doto (LwjglApplicationConfiguration.)
-                 (-> .title (set! "clojuroids"))
+                 (-> .title (set! c/title))
                  (-> .width (set! width))
                  (-> .height (set! height))
                  (-> .resizable (set! false)))]

@@ -4,10 +4,11 @@
   (:import [com.badlogic.gdx Input$Keys]
            [com.badlogic.gdx Gdx]))
 
-(def game-state (atom nil))
-(def game-states (atom ()))
-(def restartable? false)
+(def game-states (atom {}))
+(def current-state (atom nil))
+(def state-history (atom ()))
 (def rewind-factor 3)
+(def restartable? false)
 
 (defprotocol GameState
   "protocol for game states"
@@ -17,27 +18,31 @@
   (handle-input [this])
   (dispose [this]))
 
-(defn set-state!
-  [new-state]
-  (when-not (nil? @game-state)
-    (dispose @game-state))
-  (reset! game-state (init new-state)))
+(defn register-game-state!
+  [key constructor]
+  (swap! game-states assoc key constructor))
 
-(defn update-game-state
+(defn set-state!
+  [key]
+  (when-not (nil? @current-state)
+    (dispose @current-state))
+  (reset! current-state (init ((key @game-states)))))
+
+(defn update-game-state!
   []
   (try
-    (when-not (nil? @game-state)
+    (when-not (nil? @current-state)
       (if (k/key-down? Input$Keys/BACKSPACE)
-        (when (not (empty? @game-states))
-          (reset! game-state (first (take rewind-factor @game-states)))
-          (reset! game-states (drop rewind-factor @game-states))
-          (draw @game-state))
-        (do (swap! game-state handle-input)
-            (swap! game-state update! (.getDeltaTime Gdx/graphics))
-            (draw @game-state)
-            (swap! game-states conj @game-state))))
+        (when (not (empty? @state-history))
+          (reset! current-state (first (take rewind-factor @state-history)))
+          (reset! state-history (drop rewind-factor @state-history))
+          (draw @current-state))
+        (do (swap! current-state handle-input)
+            (swap! current-state update! (.getDeltaTime Gdx/graphics))
+            (draw @current-state)
+            (swap! state-history conj @current-state))))
     (catch Exception e
       (if restartable?
-        (do (reset! game-state nil)
+        (do (reset! current-state nil)
             (st/print-cause-trace e))
         (throw e)))))

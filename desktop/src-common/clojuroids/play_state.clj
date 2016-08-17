@@ -11,11 +11,9 @@
             [clojuroids.jukebox :as j])
   (:import [com.badlogic.gdx.graphics.glutils ShapeRenderer]
            [com.badlogic.gdx.graphics.g2d SpriteBatch]
-           [com.badlogic.gdx.graphics.g2d.freetype FreeTypeFontGenerator
-            FreeTypeFontGenerator$FreeTypeFontParameter]
-           [com.badlogic.gdx Gdx]
-           [com.badlogic.gdx.math MathUtils]
-           (com.badlogic.gdx Input$Keys))
+           [com.badlogic.gdx.graphics Color]
+           [com.badlogic.gdx Input$Keys]
+           [com.badlogic.gdx.math MathUtils])
   (:gen-class))
 
 (defn- random-asteroid-location
@@ -87,15 +85,14 @@
                       bg-timer
                       play-low-pulse?]
   gsm/GameState
+
   (init [this]
-    (let [[w h] c/screen-size
+    (let [[w h]     c/screen-size
           max-delay 1]
       (-> this
           (merge {:shape-renderer  (ShapeRenderer.)
                   :sprite-batch    (SpriteBatch.)
-                  :font            (let [gen (FreeTypeFontGenerator. (.internal Gdx/files "fonts/Hyperspace Bold.ttf"))]
-                                     (.generateFont gen (doto (FreeTypeFontGenerator$FreeTypeFontParameter.)
-                                                          (-> .size (set! 20)))))
+                  :font            (c/gen-font 20 Color/WHITE)
                   :player          (p/make-player :pos [(/ w 2)(/ h 2)])
                   :level           1
                   :bullets         #{}
@@ -110,26 +107,36 @@
           (spawn-asteroids))))
 
   (update! [this delta-time]
-    (let [{dead? :dead?} player]
-      (cond dead?
-            (-> this
-                (update :player #(p/reset %))
-                (update :player p/lose-life))
+    (let [{:keys [dead? extra-lives]} player]
+      (cond
+        ;; handle lose game
+        (and dead? (zero? extra-lives))
+        (do (gsm/set-state! :menu)
+            this)
 
-            (= 0 (count asteroids))
-            (-> this
-                (update :level #(+ level %))
-                (spawn-asteroids))
+        ;; handle dead player
+        dead?
+        (-> this
+            (update :player #(p/reset %))
+            (update :player p/lose-life))
 
-            :else (-> this
-                      (update :player #(p/update-player! % delta-time))
-                      (update :bullets #(b/update-bullets % delta-time))
-                      (update :asteroids #(a/update-asteroids % delta-time))
-                      (update :particles #(part/update-particles % delta-time))
-                      (handle-collisions)
-                      (play-background-music delta-time)))))
+        ;; new level when asteroids are gone
+        (= 0 (count asteroids))
+        (-> this
+            (update :level #(+ level %))
+            (spawn-asteroids))
+
+        ;; otherwise update all game objects
+        :else (-> this
+                  (update :player #(p/update-player! % delta-time))
+                  (update :bullets #(b/update-bullets % delta-time))
+                  (update :asteroids #(a/update-asteroids % delta-time))
+                  (update :particles #(part/update-particles % delta-time))
+                  (handle-collisions)
+                  (play-background-music delta-time)))))
 
   (draw [this]
+    (.setProjectionMatrix sprite-batch (.combined @c/camera))
     (p/draw-player player shape-renderer)
     (b/draw-bullets bullets shape-renderer)
     (a/draw-asteroids asteroids shape-renderer)
@@ -144,8 +151,8 @@
                                (assoc :right? (ks/key-down? Input$Keys/RIGHT))
                                ((fn [player]
                                   (let [{:keys [up? hit?]} player
-                                        key-up? (and (ks/key-down? Input$Keys/UP)
-                                                     (not hit?))]
+                                        key-up?            (and (ks/key-down? Input$Keys/UP)
+                                                                (not hit?))]
                                     (cond (and key-up?
                                                (not up?)) (j/loop-sound :thruster)
                                           (not key-up?)   (j/stop-sound :thruster))
@@ -154,7 +161,9 @@
         (shoot state)
         state)))
 
-  (dispose [this]))
+  (dispose [this]
+    (.dispose sprite-batch)
+    (.dispose shape-renderer)))
 
 (defn make-play-state
   []

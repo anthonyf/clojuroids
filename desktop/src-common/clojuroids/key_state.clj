@@ -14,7 +14,7 @@
                           (swap! key-state assoc-in [:keys key] false)
                           true))))
 
-(defn update-key-state []
+(defn update-key-state! []
   (swap! key-state assoc :pkeys (:keys @key-state)))
 
 (defn key-down? [key]
