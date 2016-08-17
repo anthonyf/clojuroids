@@ -59,7 +59,7 @@
                                       (b/make-bullet pos radians))))
       state)))
 
-(declare handle-collisions)
+(declare handle-collisions handle-input)
 
 (defn play-background-music
   [state delta-time]
@@ -128,6 +128,7 @@
 
         ;; otherwise update all game objects
         :else (-> this
+                  (handle-input)
                   (update :player #(p/update-player! % delta-time))
                   (update :bullets #(b/update-bullets % delta-time))
                   (update :asteroids #(a/update-asteroids % delta-time))
@@ -137,6 +138,7 @@
 
   (draw [this]
     (.setProjectionMatrix sprite-batch (.combined @c/camera))
+    (.setProjectionMatrix shape-renderer (.combined @c/camera))
     (p/draw-player player shape-renderer)
     (b/draw-bullets bullets shape-renderer)
     (a/draw-asteroids asteroids shape-renderer)
@@ -144,7 +146,12 @@
     (p/draw-score player sprite-batch font)
     (p/draw-player-lives player shape-renderer))
 
-  (handle-input [this]
+  (dispose [this]
+    (.dispose sprite-batch)
+    (.dispose shape-renderer)))
+
+(defn handle-input [this]
+  (let [{:keys [player]} this]
     (as-> this state
       (assoc state :player (-> player
                                (assoc :left? (ks/key-down? Input$Keys/LEFT))
@@ -159,11 +166,7 @@
                                     (assoc player :up? key-up?))))))
       (if (ks/key-pressed? Input$Keys/SPACE)
         (shoot state)
-        state)))
-
-  (dispose [this]
-    (.dispose sprite-batch)
-    (.dispose shape-renderer)))
+        state))))
 
 (defn make-play-state
   []

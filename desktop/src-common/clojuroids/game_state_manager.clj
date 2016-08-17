@@ -6,8 +6,7 @@
 
 (def game-states (atom {}))
 (def current-state (atom nil))
-(def state-history (atom ()))
-(def rewind-factor 3)
+(def next-state-key (atom nil))
 (def restartable? false)
 
 (defprotocol GameState
@@ -15,7 +14,6 @@
   (init [this])
   (draw [this])
   (update! [this delta-time])
-  (handle-input [this])
   (dispose [this]))
 
 (defn register-game-state!
@@ -24,23 +22,19 @@
 
 (defn set-state!
   [key]
-  (when-not (nil? @current-state)
-    (dispose @current-state))
-  (reset! current-state (init ((key @game-states)))))
+  (reset! next-state-key key))
 
 (defn update-game-state!
   []
   (try
     (when-not (nil? @current-state)
-      (if (k/key-down? Input$Keys/BACKSPACE)
-        (when (not (empty? @state-history))
-          (reset! current-state (first (take rewind-factor @state-history)))
-          (reset! state-history (drop rewind-factor @state-history))
-          (draw @current-state))
-        (do (swap! current-state handle-input)
-            (swap! current-state update! (.getDeltaTime Gdx/graphics))
-            (draw @current-state)
-            (swap! state-history conj @current-state))))
+      (swap! current-state update! (.getDeltaTime Gdx/graphics))
+      (draw @current-state))
+    (when-not (nil? @next-state-key)
+        (when-not (nil? @current-state)
+          (dispose @current-state))
+        (reset! current-state (init ((@next-state-key @game-states))))
+        (reset! next-state-key nil))
     (catch Exception e
       (if restartable?
         (do (reset! current-state nil)

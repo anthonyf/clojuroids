@@ -25,7 +25,24 @@
                 :current-item 0})))
 
   (update! [this delta-time]
-    this)
+    (cond
+      ;; menu up
+      (and (k/key-pressed? Input$Keys/UP)
+           (> current-item 0))
+      (update this :current-item #(- % 1))
+
+      ;; menu down
+      (and (k/key-pressed? Input$Keys/DOWN)
+           (< current-item (dec (count menu-items))))
+      (update this :current-item #(+ % 1))
+
+      ;; menu select
+      (k/key-pressed? Input$Keys/ENTER)
+      (let [{:keys [action]} (menu-items current-item)]
+        (action this)
+        this)
+
+      :else this))
 
   (draw [this]
     (.setProjectionMatrix sprite-batch (.combined @c/camera))
@@ -54,26 +71,6 @@
                  (float (- 180 (* 35 i)))))))
     (.end sprite-batch))
 
-  (handle-input [this]
-    (cond
-      ;; menu up
-      (and (k/key-pressed? Input$Keys/UP)
-           (> current-item 0))
-      (update this :current-item #(- % 1))
-
-      ;; menu down
-      (and (k/key-pressed? Input$Keys/DOWN)
-           (< current-item (dec (count menu-items))))
-      (update this :current-item #(+ % 1))
-
-      ;; menu select
-      (k/key-pressed? Input$Keys/ENTER)
-      (let [{:keys [action]} (menu-items current-item)]
-        (action this)
-        this)
-
-      :else this))
-
   (dispose [this]
     (.dispose sprite-batch)))
 
@@ -85,8 +82,7 @@
   (gsm/set-state! :play))
 
 (defn highscores [menu-state]
-  ;; TODO
-  )
+  (gsm/set-state! :highscores))
 
 (defn quit [menu-state]
   (.exit Gdx/app))
