@@ -16,8 +16,7 @@
      {:space-object (so/map->SpaceObject {:radians radians
                                           :size [2 2]
                                           :pos  pos
-                                          :dpos [(* speed (MathUtils/cos radians))
-                                                 (* speed (MathUtils/sin radians))]})
+                                          :dpos (so/make-vector radians speed)})
       :timer 0
       :time 1
       :remove? false})))

@@ -8,8 +8,7 @@
 (defn- update-asteroid-shape
   [asteroid]
   (let [{:keys [num-points dists]
-         {[x y] :pos
-          :keys [radians]} :space-object} asteroid
+         {:keys [pos radians]} :space-object} asteroid
         angles (take num-points
                      (drop 1 (iterate
                               (fn [angle]
@@ -17,8 +16,8 @@
                               0)))]
     (assoc-in asteroid [:space-object :shape]
               (map (fn [angle dist]
-                     [(+ x (* (MathUtils/cos (+ radians angle)) dist))
-                      (+ y (* (MathUtils/sin (+ radians angle)) dist))])
+                     (-> (so/make-vector (+ radians angle) dist)
+                         (so/vector-add pos)))
                    angles dists))))
 
 (defn- update-asteroid
@@ -68,12 +67,12 @@
                                             radius (/ width 2.0)]
                                         (for [_ (range num-points)]
                                           (MathUtils/random (/ radius 2.0) radius)))
-                        :space-object (so/map->SpaceObject {:pos            [x y]
-                                                            :rotation-speed (MathUtils/random -1 1)
-                                                            :radians        radians
-                                                            :size           size
-                                                            :dpos           [(* speed (MathUtils/cos radians))
-                                                                             (* speed (MathUtils/sin radians))]})})
+                        :space-object (so/map->SpaceObject
+                                       {:pos            [x y]
+                                        :rotation-speed (MathUtils/random -1 1)
+                                        :radians        radians
+                                        :size           size
+                                        :dpos           (so/make-vector radians speed)})})
         (update-asteroid-shape))))
 
 (defn score

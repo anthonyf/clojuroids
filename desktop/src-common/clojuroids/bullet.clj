@@ -11,8 +11,8 @@
   (let [speed 350]
     (map->Bullet {:space-object (so/map->SpaceObject {:pos     [x y]
                                                       :radians radians
-                                                      :dpos    [(* (MathUtils/cos radians) speed)
-                                                                (* (MathUtils/sin radians) speed)]
+                                                      :dpos    (so/make-vector radians
+                                                                               speed)
                                                       :size    [2 2]})
                   :remove?      false
                   :life-timer   (t/make-timer 1)})))

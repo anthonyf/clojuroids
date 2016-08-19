@@ -1,6 +1,6 @@
 (ns clojuroids.player
   (:require [clojuroids.common :as c]
-            [clojuroids.space-object :refer :all]
+            [clojuroids.space-object :as so]
             [clojuroids.jukebox :as j])
   (:import [com.badlogic.gdx.math MathUtils]
            [com.badlogic.gdx.graphics.g2d Batch]))
@@ -20,15 +20,12 @@
                    score extra-lives required-score])
 
 (defn- make-ship-shape
-  [[x y] radians]
-  [[(+ x (* (MathUtils/cos radians) 8))
-    (+ y (* (MathUtils/sin radians) 8))]
-   [(+ x (* (MathUtils/cos (- radians (/ (* 4 Math/PI) 5))) 8))
-    (+ y (* (MathUtils/sin (- radians (/ (* 4 Math/PI) 5))) 8))]
-   [(+ x (* (MathUtils/cos (+ radians Math/PI)) 5))
-    (+ y (* (MathUtils/sin (+ radians Math/PI)) 5))]
-   [(+ x (* (MathUtils/cos (+ radians (/ (* 4 Math/PI) 5))) 8))
-    (+ y (* (MathUtils/sin (+ radians (/ (* 4 Math/PI) 5))) 8))]])
+  [pos radians]
+  (map (partial so/vector-add pos)
+       [(so/make-vector radians 8)
+        (so/make-vector (- radians (/ (* 4 Math/PI) 5)) 8)
+        (so/make-vector (+ radians Math/PI) 5)
+        (so/make-vector (+ radians (/ (* 4 Math/PI) 5)) 8)]))
 
 (defn- update-ship-shape
   [player]
@@ -38,24 +35,20 @@
               (make-ship-shape pos radians))))
 
 (defn- make-flame-shape
-  [[x y] radians accelerating-timer]
-  [[(+ x (* (MathUtils/cos (- radians (/ (* 5 Math/PI) 6))) 5))
-    (+ y (* (MathUtils/sin (- radians (/ (* 5 Math/PI) 6))) 5))]
-   [(+ x (* (MathUtils/cos (- radians Math/PI))
-            (+ 6 (* accelerating-timer 50))))
-    (+ y (* (MathUtils/sin (- radians Math/PI))
-            (+ 6 (* accelerating-timer 50))))]
-   [(+ x (* (MathUtils/cos (+ radians (/ (* 5 Math/PI) 6))) 5))
-    (+ y (* (MathUtils/sin (+ radians (/ (* 5 Math/PI) 6))) 5))]])
+  [pos radians accelerating-timer]
+  (map (partial so/vector-add pos)
+       [(so/make-vector (- radians (/ (* 5 Math/PI) 6)) 5)
+        (so/make-vector (- radians Math/PI) (+ 6 (* accelerating-timer 50)))
+        (so/make-vector (+ radians (/ (* 5 Math/PI) 6)) 5)]))
 
 (defn- accelerate
   [player delta-time]
   (let [{:keys [space-object]} player
-        {[dx dy] :dpos
-         :keys [radians]} space-object]
+        {:keys [dpos radians]} space-object]
     (assoc-in player [:space-object :dpos]
-              [(+ dx (* (MathUtils/cos radians) acceleration delta-time))
-               (+ dy (* (MathUtils/sin radians) acceleration delta-time))])))
+              (-> (so/make-vector radians
+                                  (* acceleration delta-time))
+                  (so/vector-add dpos)))))
 
 (defn- decelerate
   [player delta-time]
@@ -159,24 +152,24 @@
         ;; update shapes
         (update-ship-shape p)
         ;; update space-object
-        (update p :space-object #(update-space-object! % delta-time))))))
+        (update p :space-object #(so/update-space-object! % delta-time))))))
 
 (defn draw-player
   [player shape-renderer]
   (let [{:keys [space-object up? flame hit? hit-lines]} player]
     (if hit?
-      (draw-lines shape-renderer hit-lines player-color)
-      (do (draw-space-object space-object shape-renderer player-color)
+      (so/draw-lines shape-renderer hit-lines player-color)
+      (do (so/draw-space-object space-object shape-renderer player-color)
           (when up?
-            (draw-shape shape-renderer flame player-color))))))
+            (so/draw-shape shape-renderer flame player-color))))))
 
 (defn make-player
   [& {:keys [pos]
       :or {pos [0 0]}}]
   (let [radians (/ Math/PI 2)]
-    (map->Player {:space-object (make-space-object :pos pos
-                                                   :radians radians
-                                                   :shape (make-ship-shape pos radians))
+    (map->Player {:space-object (so/make-space-object :pos pos
+                                                      :radians radians
+                                                      :shape (make-ship-shape pos radians))
                   :left? false
                   :right? false
                   :up? false
@@ -199,16 +192,12 @@
                        :left? false
                        :right? false
                        :up? false
-                       :hit-lines (vert-lines-seq shape)
-                       :hit-lines-vector [[(MathUtils/cos (+ radians 1.5))
-                                           (MathUtils/sin (+ radians 1.5))]
-                                          [(MathUtils/cos (- radians 1.5))
-                                           (MathUtils/sin (- radians 1.5))]
-                                          [(MathUtils/cos (- radians 2.8))
-                                           (MathUtils/sin (- radians 2.8))]
-                                          [(MathUtils/cos (+ radians 2.8))
-                                           (MathUtils/sin (+ radians 2.8))]]})
-        (update player :space-object (fn [so] (assoc so :dpos [0 0]))))
+                       :hit-lines (so/vert-lines-seq shape)
+                       :hit-lines-vector [(so/make-vector (+ radians 1.5) 1)
+                                          (so/make-vector (- radians 1.5) 1)
+                                          (so/make-vector (- radians 2.8) 1)
+                                          (so/make-vector (+ radians 2.8) 1)]})
+        (assoc-in player [:space-object :dpos] [0 0]))
       player)))
 
 (defn reset

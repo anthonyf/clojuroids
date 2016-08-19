@@ -2,10 +2,17 @@
   (:require [clojuroids.common :as c])
   (:import [com.badlogic.gdx.graphics.glutils
             ShapeRenderer ShapeRenderer$ShapeType]
-           [com.badlogic.gdx.math Polygon]))
+           [com.badlogic.gdx.math Polygon MathUtils]))
 
 (defrecord SpaceObject
-  [pos dpos radians rotation-speed shape])
+    [pos dpos radians rotation-speed shape])
+
+(defn make-vector [direction magnitude]
+  [(* (MathUtils/cos direction) magnitude)
+   (* (MathUtils/sin direction) magnitude)])
+
+(defn vector-add [[x1 y1] [x2 y2]]
+  [(+ x1 x2) (+ y1 y2)])
 
 (defn- wrap
   [space-object]
