@@ -2,7 +2,8 @@
   (:require [clojuroids.common :as c]
             [clojuroids.space-object :as so]
             [clojuroids.jukebox :as j]
-            [clojuroids.key-state :as ks])
+            [clojuroids.key-state :as ks]
+            [clojuroids.timer :as t])
   (:import [com.badlogic.gdx.math MathUtils]
            [com.badlogic.gdx.graphics.g2d Batch]
            [com.badlogic.gdx Input$Keys]))
@@ -17,7 +18,7 @@
                    accelerating-timer flame
                    hit? dead?
                    hit-lines hit-lines-vector
-                   hit-timer hit-time
+                   hit-timer
                    score extra-lives required-score])
 
 (defn- make-ship-shape
@@ -39,7 +40,7 @@
   [pos radians accelerating-timer]
   (map (partial so/vector-add pos)
        [(so/make-vector (- radians (/ (* 5 Math/PI) 6)) 5)
-        (so/make-vector (- radians Math/PI) (+ 6 (* accelerating-timer 50)))
+        (so/make-vector (- radians Math/PI) (+ 6 (* (t/timer-value accelerating-timer) 50)))
         (so/make-vector (+ radians (/ (* 5 Math/PI) 6)) 5)]))
 
 (defn- accelerate
@@ -76,11 +77,10 @@
                   {:keys [pos radians]} space-object]
               (assoc p :flame (make-flame-shape pos radians accelerating-timer)))
             (accelerate p delta-time)
-            (update p :accelerating-timer
-                    #(let [at (+ % delta-time)]
-                       (if (> at 0.1)
-                         0
-                         at)))))
+            (update p :accelerating-timer #(let [at (t/update-timer % delta-time)]
+                                             (if (t/timer-elapsed? at)
+                                               (t/reset-timer at)
+                                               at)))))
       (do (j/stop-sound :thruster)
           (assoc player :flame [])))))
 
@@ -114,14 +114,14 @@
   (j/stop-sound :thruster)
   (-> player
       ;; handle expiring hit timer
+      (update :hit-timer #(t/update-timer % delta-time))
       ((fn [player]
-         (let [{:keys [hit-timer hit-time]} player]
+         (let [{:keys [hit-timer]} player]
            (merge player
-                  (let [hit-timer (+ hit-timer delta-time)]
-                    (if (> hit-timer hit-time)
-                      {:hit-timer 0
+                  (if (t/timer-elapsed? hit-timer)
+                      {:hit-timer (t/reset-timer hit-timer)
                        :dead? true}
-                      {:hit-timer hit-timer}))))))
+                      {:hit-timer hit-timer})))))
       ;; player explode animation
       ((fn [player]
          (let [{:keys [hit-lines-vector]} player]
@@ -173,10 +173,9 @@
                                                       :radians radians
                                                       :shape (make-ship-shape pos radians))
                   :flame []
-                  :accelerating-timer 0
+                  :accelerating-timer (t/make-timer 0.1)
                   :hit? false
-                  :hit-timer 0
-                  :hit-time 2
+                  :hit-timer (t/make-timer 2)
                   :score 0
                   :extra-lives 3
                   :required-score extra-life-increment})))

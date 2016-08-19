@@ -12,6 +12,10 @@
   [timer delta-time]
   (update timer :timer #(+ % delta-time)))
 
+(defn timer-value
+  [{timer :timer}]
+  timer)
+
 (defn reset-timer
   [timer]
   (assoc timer :timer 0))
