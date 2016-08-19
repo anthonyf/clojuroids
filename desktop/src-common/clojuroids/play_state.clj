@@ -58,8 +58,9 @@
              (not hit?))
       (do
         (j/play-sound :shoot)
-        (update state :bullets #(conj %
-                                      (b/make-bullet pos radians))))
+        (update state :bullets
+                #(conj %
+                       (b/make-bullet pos radians))))
       state)))
 
 (declare handle-collisions handle-input)
@@ -67,18 +68,24 @@
 (defn play-background-music
   [state delta-time]
   (-> state
+      ((fn [{:keys [num-asteroids-left total-asteroids]
+             :as state}]
+         (assoc state :current-delay (+ (/ (* (- max-delay min-delay)
+                                              num-asteroids-left)
+                                           total-asteroids)
+                                        min-delay))))
       (update :bg-timer #(+ % delta-time))
-      ((fn [state]
-         (let [{:keys [player bg-timer current-delay play-low-pulse?]} state
-               {:keys [hit?]} player]
-           (if (and (not hit?) (>= bg-timer current-delay))
-             (do (j/play-sound (if play-low-pulse?
-                                 :pulselow
-                                 :pulsehigh))
-                 (-> state
-                     (update :play-low-pulse? #(not %))
-                     (assoc :bg-timer 0)))
-             state))))))
+      ((fn [{{:keys [hit?]} :player
+             :keys [bg-timer current-delay play-low-pulse?]
+             :as state}]
+         (if (and (not hit?) (>= bg-timer current-delay))
+           (do (j/play-sound (if play-low-pulse?
+                               :pulselow
+                               :pulsehigh))
+               (-> state
+                   (update :play-low-pulse? #(not %))
+                   (assoc :bg-timer 0)))
+           state)))))
 
 (defrecord PlayState [shape-renderer player
                       bullets asteroids particles
@@ -174,12 +181,6 @@
   (-> state
       (create-particles (-> asteroid :space-object :pos))
       (update :num-asteroids-left dec)
-      ((fn [state]
-         (let [{:keys [num-asteroids-left total-asteroids]} state]
-           (assoc state :current-delay (+ (/ (* (- max-delay min-delay)
-                                                num-asteroids-left)
-                                             total-asteroids)
-                                          min-delay)))))
       (update :asteroids #(let [{type :type
                                  {:keys [pos]} :space-object} asteroid]
                             (if (contains? #{:large :medium} type)
