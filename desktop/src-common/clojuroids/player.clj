@@ -63,10 +63,12 @@
         {[dx dy] :dpos} space-object
         vec (Math/sqrt (+ (* dx dx) (* dy dy)))]
     (assoc-in player [:space-object :dpos]
-              (cond (> vec 0) [(- dx (* (/ dx vec) deceleration delta-time))
-                               (- dy (* (/ dy vec) deceleration delta-time))]
-                    (> vec max-speed) [(* (/ dx vec) max-speed)
+              (cond (> vec max-speed) [(* (/ dx vec) max-speed)
                                        (* (/ dy vec) max-speed)]
+
+                    (> vec 0) [(- dx (* (/ dx vec) deceleration delta-time))
+                               (- dy (* (/ dy vec) deceleration delta-time))]
+
                     :else [dx dy]))))
 
 (defn- update-acceleration
