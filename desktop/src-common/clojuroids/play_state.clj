@@ -16,6 +16,11 @@
            [com.badlogic.gdx.math MathUtils])
   (:gen-class))
 
+(def min-delay 0.25)
+(def max-delay 1)
+
+(def max-bullets 4)
+
 (defn- random-asteroid-location
   [player-pos]
   (let [[screen-width screen-height] c/screen-size
@@ -31,7 +36,7 @@
 
 (defn- spawn-asteroids
   [state]
-  (let [{:keys [level player max-delay]} state
+  (let [{:keys [level player]} state
         player-pos (get-in player [:space-object :pos])
         num-to-spawn (+ 4 (- level 1))
         total-asteroids (* num-to-spawn 7)
@@ -43,8 +48,6 @@
             :total-asteroids total-asteroids
             :num-asteroids-left total-asteroids
             :current-delay max-delay})))
-
-(def ^:const max-bullets 4)
 
 (defn shoot
   [state]
@@ -81,14 +84,13 @@
                       bullets asteroids particles
                       level total-asteroids num-asteroids-left
                       sprite-batch font
-                      max-delay min-delay current-delay
+                      current-delay
                       bg-timer
                       play-low-pulse?]
   gsm/GameState
 
   (init [this]
-    (let [[w h]     c/screen-size
-          max-delay 1]
+    (let [[w h] c/screen-size]
       (-> this
           (merge {:shape-renderer  (ShapeRenderer.)
                   :sprite-batch    (SpriteBatch.)
@@ -99,8 +101,6 @@
                   :asteroids       #{}
                   :particles       ()
                   ;; set up bg music
-                  :max-delay       max-delay
-                  :min-delay       0.25
                   :current-delay   max-delay
                   :bg-timer        max-delay
                   :play-low-pulse? true})
@@ -175,7 +175,7 @@
       (create-particles (-> asteroid :space-object :pos))
       (update :num-asteroids-left dec)
       ((fn [state]
-         (let [{:keys [max-delay min-delay num-asteroids-left total-asteroids]} state]
+         (let [{:keys [num-asteroids-left total-asteroids]} state]
            (assoc state :current-delay (+ (/ (* (- max-delay min-delay)
                                                 num-asteroids-left)
                                              total-asteroids)
