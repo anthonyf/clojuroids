@@ -101,7 +101,7 @@
                   ;; set up bg music
                   :max-delay       max-delay
                   :min-delay       0.25
-                  :current-deley   max-delay
+                  :current-delay   max-delay
                   :bg-timer        max-delay
                   :play-low-pulse? true})
           (spawn-asteroids))))
