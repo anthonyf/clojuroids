@@ -7,19 +7,28 @@
 (defn load-sound!
   [name path]
   (swap! sounds assoc name
-         (.newSound Gdx/audio (.internal Gdx/files path))))
+         {:sound (.newSound Gdx/audio (.internal Gdx/files path))
+          :looping? false}))
 
 (defn play-sound
   [name]
-  (.play (name @sounds)))
+  (.play (-> @sounds name :sound))
+  (swap! sounds assoc-in [name :looping?] false))
+
+(defn sound-looping?
+  [name]
+  (-> @sounds name :looping?))
 
 (defn loop-sound
   [name]
-  (.loop (name @sounds)))
+  (when-not (sound-looping? name)
+    (.loop (-> @sounds name :sound))
+    (swap! sounds assoc-in [name :looping?] true)))
 
 (defn stop-sound
   [name]
-  (.stop (name @sounds)))
+  (.stop (-> @sounds name :sound))
+  (swap! sounds assoc-in [name :looping?] false))
 
 (defn stop-all
   [name]

@@ -1,9 +1,11 @@
 (ns clojuroids.player
   (:require [clojuroids.common :as c]
             [clojuroids.space-object :as so]
-            [clojuroids.jukebox :as j])
+            [clojuroids.jukebox :as j]
+            [clojuroids.key-state :as ks])
   (:import [com.badlogic.gdx.math MathUtils]
-           [com.badlogic.gdx.graphics.g2d Batch]))
+           [com.badlogic.gdx.graphics.g2d Batch]
+           [com.badlogic.gdx Input$Keys]))
 
 (def acceleration 100)
 (def deceleration 10)
@@ -12,7 +14,6 @@
 (def extra-life-increment 10000)
 
 (defrecord Player [space-object
-                   left? right? up?
                    accelerating-timer flame
                    hit? dead?
                    hit-lines hit-lines-vector
@@ -66,20 +67,22 @@
 
 (defn- update-acceleration
   [player delta-time]
-  (let [{:keys [up?]} player]
-    (if up?
-      (as-> player p
-        (let [{:keys [space-object accelerating-timer]} p
-              {[dx dy] :dpos
-               :keys [pos radians]} space-object]
-          (assoc p :flame (make-flame-shape pos radians accelerating-timer)))
-        (accelerate p delta-time)
-        (update p :accelerating-timer
-                #(let [at (+ % delta-time)]
-                    (if (> at 0.1)
-                      0
-                      at))))
-      player)))
+  (let [{:keys [hit?]} player]
+    (if (and (not hit?)
+             (ks/key-down? Input$Keys/UP))
+      (do (j/loop-sound :thruster)
+          (as-> player p
+            (let [{:keys [space-object accelerating-timer]} p
+                  {:keys [pos radians]} space-object]
+              (assoc p :flame (make-flame-shape pos radians accelerating-timer)))
+            (accelerate p delta-time)
+            (update p :accelerating-timer
+                    #(let [at (+ % delta-time)]
+                       (if (> at 0.1)
+                         0
+                         at)))))
+      (do (j/stop-sound :thruster)
+          (assoc player :flame [])))))
 
 (defn- turn
   [player delta-time sign]
@@ -100,14 +103,15 @@
   [{:keys [score required-score]
     :as player}]
   (if (>= score required-score)
-      (do (j/play-sound :extralife)
-          (-> player
-              (update :extra-lives inc)
-              (update :required-score #(+ % extra-life-increment))))
-      player))
+    (do (j/play-sound :extralife)
+        (-> player
+            (update :extra-lives inc)
+            (update :required-score #(+ % extra-life-increment))))
+    player))
 
 (defn- update-dead-player
   [player delta-time]
+  (j/stop-sound :thruster)
   (-> player
       ;; handle expiring hit timer
       ((fn [player]
@@ -141,10 +145,9 @@
         ;; check extra lives
         (update-extra-lives p)
         ;; turning
-        (let [{:keys [left? right?]} p]
-          (cond left? (turn-left p delta-time)
-                     right? (turn-right p delta-time)
-                     :else p))
+        (cond (ks/key-down? Input$Keys/LEFT) (turn-left p delta-time)
+              (ks/key-down? Input$Keys/RIGHT)(turn-right p delta-time)
+              :else p)
         ;; acceleration
         (update-acceleration p delta-time)
         ;; deceleration
@@ -156,12 +159,11 @@
 
 (defn draw-player
   [player shape-renderer]
-  (let [{:keys [space-object up? flame hit? hit-lines]} player]
+  (let [{:keys [space-object flame hit? hit-lines]} player]
     (if hit?
       (so/draw-lines shape-renderer hit-lines player-color)
       (do (so/draw-space-object space-object shape-renderer player-color)
-          (when up?
-            (so/draw-shape shape-renderer flame player-color))))))
+          (so/draw-shape shape-renderer flame player-color)))))
 
 (defn make-player
   [& {:keys [pos]
@@ -170,9 +172,6 @@
     (map->Player {:space-object (so/make-space-object :pos pos
                                                       :radians radians
                                                       :shape (make-ship-shape pos radians))
-                  :left? false
-                  :right? false
-                  :up? false
                   :flame []
                   :accelerating-timer 0
                   :hit? false
@@ -189,9 +188,6 @@
     (if-not hit?
       (as-> player player
         (merge player {:hit? true
-                       :left? false
-                       :right? false
-                       :up? false
                        :hit-lines (so/vert-lines-seq shape)
                        :hit-lines-vector [(so/make-vector (+ radians 1.5) 1)
                                           (so/make-vector (- radians 1.5) 1)

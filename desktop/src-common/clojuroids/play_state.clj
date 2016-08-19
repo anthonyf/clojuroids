@@ -153,21 +153,9 @@
 
 (defn handle-input [this]
   (let [{:keys [player]} this]
-    (as-> this state
-      (assoc state :player (-> player
-                               (assoc :left? (ks/key-down? Input$Keys/LEFT))
-                               (assoc :right? (ks/key-down? Input$Keys/RIGHT))
-                               ((fn [player]
-                                  (let [{:keys [up? hit?]} player
-                                        key-up?            (and (ks/key-down? Input$Keys/UP)
-                                                                (not hit?))]
-                                    (cond (and key-up?
-                                               (not up?)) (j/loop-sound :thruster)
-                                          (not key-up?)   (j/stop-sound :thruster))
-                                    (assoc player :up? key-up?))))))
-      (if (ks/key-pressed? Input$Keys/SPACE)
-        (shoot state)
-        state))))
+    (if (ks/key-pressed? Input$Keys/SPACE)
+        (shoot this)
+        this)))
 
 (defn make-play-state
   []
