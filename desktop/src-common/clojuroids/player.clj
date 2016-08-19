@@ -5,8 +5,12 @@
   (:import [com.badlogic.gdx.math MathUtils]
            [com.badlogic.gdx.graphics.g2d Batch]))
 
+(def acceleration 100)
+(def deceleration 10)
+(def max-speed 300)
+
 (defrecord Player [space-object
-                   left? right? up? max-speed acceleration deceleration
+                   left? right? up?
                    accelerating-timer flame
                    hit? dead?
                    hit-lines hit-lines-vector
@@ -44,7 +48,7 @@
 
 (defn- accelerate
   [player delta-time]
-  (let [{:keys [acceleration space-object]} player
+  (let [{:keys [space-object]} player
         {[dx dy] :dpos
          :keys [radians]} space-object]
     (assoc-in player [:space-object :dpos]
@@ -53,9 +57,7 @@
 
 (defn- decelerate
   [player delta-time]
-  (let [{:keys [space-object
-                deceleration
-                max-speed]} player
+  (let [{:keys [space-object]} player
         {[dx dy] :dpos} space-object
         vec (Math/sqrt (+ (* dx dx) (* dy dy)))]
     (assoc-in player [:space-object :dpos]
@@ -70,7 +72,7 @@
   (let [{:keys [up?]} player]
     (if up?
       (as-> player p
-        (let [{:keys [space-object acceleration accelerating-timer]} p
+        (let [{:keys [space-object accelerating-timer]} p
               {[dx dy] :dpos
                :keys [pos radians]} space-object]
           (assoc p :flame (make-flame-shape pos radians accelerating-timer)))
@@ -178,9 +180,6 @@
                   :left? false
                   :right? false
                   :up? false
-                  :acceleration 200
-                  :deceleration 10
-                  :max-speed 300
                   :flame []
                   :accelerating-timer 0
                   :hit? false
