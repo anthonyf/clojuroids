@@ -18,16 +18,14 @@
                   :life-time    1})))
 
 (defn make-bullet-shape
-  [bullet]
-  (let [{:keys [space-object]} bullet
-        {:keys [pos radians]} space-object
-        [x y] pos]
-    [[(+ x 1)
+  [{{radians :radians
+     [x y]   :pos   } :space-object}]
+  [[(+ x 1)
       (+ y 1)]
      [(+ x 1)
       (- y 1)]
      [(- x 1)
-      (- y 1)]]))
+      (- y 1)]])
 
 (defn update-bullet
   [bullet delta-time]

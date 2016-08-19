@@ -100,14 +100,14 @@
 (def extra-life-increment 10000)
 
 (defn- update-extra-lives
-  [player]
-  (let [{:keys [score required-score]} player]
-    (if (>= score required-score)
+  [{:keys [score required-score]
+    :as player}]
+  (if (>= score required-score)
       (do (j/play-sound :extralife)
           (-> player
               (update :extra-lives inc)
               (update :required-score #(+ % extra-life-increment))))
-      player)))
+      player))
 
 (defn- update-dead-player
   [player delta-time]
