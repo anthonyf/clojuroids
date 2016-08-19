@@ -8,6 +8,8 @@
 (def acceleration 100)
 (def deceleration 10)
 (def max-speed 300)
+(def player-color [1 1 1 1])
+(def extra-life-increment 10000)
 
 (defrecord Player [space-object
                    left? right? up?
@@ -99,8 +101,6 @@
   [player delta-time]
   (turn player delta-time -))
 
-(def extra-life-increment 10000)
-
 (defn- update-extra-lives
   [{:keys [score required-score]
     :as player}]
@@ -158,8 +158,6 @@
         (update-ship-shape p)
         ;; update space-object
         (update p :space-object #(update-space-object! % delta-time))))))
-
-(def player-color [1 1 1 1])
 
 (defn draw-player
   [player shape-renderer]

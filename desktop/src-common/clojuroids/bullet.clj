@@ -1,9 +1,10 @@
 (ns clojuroids.bullet
-  (:require [clojuroids.space-object :as so])
+  (:require [clojuroids.space-object :as so]
+            [clojuroids.timer :as t])
   (:import [com.badlogic.gdx.math MathUtils]))
 
 (defrecord Bullet
-  [space-object life-time life-timer remove?])
+    [space-object life-timer remove?])
 
 (defn make-bullet
   [[x y] radians]
@@ -14,8 +15,7 @@
                                                                 (* (MathUtils/sin radians) speed)]
                                                       :size    [2 2]})
                   :remove?      false
-                  :life-timer   0
-                  :life-time    1})))
+                  :life-timer   (t/make-timer 1)})))
 
 (defn make-bullet-shape
   [{{radians :radians
@@ -30,12 +30,12 @@
 (defn update-bullet
   [bullet delta-time]
   (as-> bullet b
-        (update b :space-object #(-> %
-                                     (so/update-space-object! delta-time)
-                                     (assoc :shape (make-bullet-shape b))))
-        (update b :life-timer #(+ % delta-time))
-        (assoc b :remove? (let [{:keys [life-timer life-time]} b]
-                            (> life-timer life-time)))))
+    (update b :space-object #(-> %
+                                 (so/update-space-object! delta-time)
+                                 (assoc :shape (make-bullet-shape b))))
+    (update b :life-timer t/update-timer delta-time)
+    (assoc b :remove? (let [{:keys [life-timer]} b]
+                        (t/timer-elapsed? life-timer)))))
 
 (defn update-bullets
   [bullets delta-time]
