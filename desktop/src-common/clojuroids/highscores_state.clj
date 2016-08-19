@@ -45,7 +45,8 @@
     (.end sprite-batch))
 
   (dispose [this]
-    (.dispose sprite-batch)))
+    (.dispose sprite-batch)
+    (.dispose font)))
 
 (defn handle-input [this]
   (when (or (k/key-pressed? Input$Keys/ENTER)

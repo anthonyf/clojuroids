@@ -72,7 +72,9 @@
     (.end sprite-batch))
 
   (dispose [this]
-    (.dispose sprite-batch)))
+    (.dispose sprite-batch)
+    (.dispose title-font)
+    (.dispose item-font)))
 
 (defn make-menu-state
   []

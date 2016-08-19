@@ -148,7 +148,8 @@
 
   (dispose [this]
     (.dispose sprite-batch)
-    (.dispose shape-renderer)))
+    (.dispose shape-renderer)
+    (.dispose font)))
 
 (defn handle-input [this]
   (let [{:keys [player]} this]
