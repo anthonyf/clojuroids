@@ -5,7 +5,8 @@
             [clojuroids.play-state :as ps]
             [clojuroids.jukebox :as j]
             [clojuroids.menu-state :as ms]
-            [clojuroids.highscores-state :as hs])
+            [clojuroids.high-scores-state :as hs]
+            [clojuroids.game-over-state :as gos])
   (:import [com.badlogic.gdx ApplicationListener Gdx]
            [com.badlogic.gdx.graphics GL30 OrthographicCamera]))
 
@@ -36,7 +37,8 @@
 
       (gsm/register-game-state! :menu ms/make-menu-state)
       (gsm/register-game-state! :play ps/make-play-state)
-      (gsm/register-game-state! :highscores hs/make-highscores-state)
+      (gsm/register-game-state! :high-scores hs/make-high-scores-state)
+      (gsm/register-game-state! :game-over gos/make-game-over-state)
 
       (gsm/set-state! :menu))
 

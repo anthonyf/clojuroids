@@ -31,6 +31,6 @@
   (swap! sounds assoc-in [name :looping?] false))
 
 (defn stop-all
-  [name]
-  (doseq [[name sound] @sounds]
-    (stop-sound name sound)))
+  []
+  (doseq [[name _] @sounds]
+    (stop-sound name)))

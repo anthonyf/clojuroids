@@ -114,11 +114,12 @@
           (spawn-asteroids))))
 
   (update! [this delta-time]
-    (let [{:keys [dead? extra-lives]} player]
+    (let [{:keys [dead? extra-lives score]} player]
       (cond
         ;; handle lose game
         (and dead? (zero? extra-lives))
-        (do (gsm/set-state! :menu)
+        (do (gsm/set-state! :game-over score)
+            (j/stop-all)
             this)
 
         ;; handle dead player

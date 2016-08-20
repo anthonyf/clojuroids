@@ -6,7 +6,7 @@
 
 (def game-states (atom {}))
 (def current-state (atom nil))
-(def next-state-key (atom nil))
+(def next-state (atom nil))
 (def restartable? false)
 
 (defprotocol GameState
@@ -21,8 +21,8 @@
   (swap! game-states assoc key constructor))
 
 (defn set-state!
-  [key]
-  (reset! next-state-key key))
+  [key & args]
+  (reset! next-state {:key key :args args}))
 
 (defn update-game-state!
   []
@@ -30,11 +30,13 @@
     (when-not (nil? @current-state)
       (swap! current-state update! (.getDeltaTime Gdx/graphics))
       (draw @current-state))
-    (when-not (nil? @next-state-key)
-        (when-not (nil? @current-state)
-          (dispose @current-state))
-        (reset! current-state (init ((@next-state-key @game-states))))
-        (reset! next-state-key nil))
+    (when-not (nil? @next-state)
+      (when-not (nil? @current-state)
+        (dispose @current-state))
+      (let [{:keys [key args]} @next-state]
+        (reset! current-state (init (apply (key @game-states)
+                                           args))))
+      (reset! next-state nil))
     (catch Exception e
       (if restartable?
         (do (reset! current-state nil)
