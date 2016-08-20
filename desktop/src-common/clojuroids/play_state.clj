@@ -181,52 +181,50 @@
   (-> state
       (create-particles (-> asteroid :space-object :pos))
       (update :num-asteroids-left dec)
-      (update :asteroids #(let [{type :type
-                                 {:keys [pos]} :space-object} asteroid]
-                            (if (contains? #{:large :medium} type)
-                              (let [new-type (case type
-                                               :large :medium
-                                               :medium :small)]
-                                (set/union % (set [(a/make-asteroid pos new-type)
-                                                   (a/make-asteroid pos new-type)])))
-                              %)))))
+      (update :asteroids (fn [asteroids]
+                           (let [{type :type
+                                  {:keys [pos]} :space-object} asteroid]
+                             (if (contains? #{:large :medium} type)
+                               (let [new-type (case type
+                                                :large :medium
+                                                :medium :small)]
+                                 (set/union asteroids
+                                            (set [(a/make-asteroid pos new-type)
+                                                  (a/make-asteroid pos new-type)])))
+                               asteroids))))))
 
 (defn- handle-asteroid-bullet-collisions
-  [state]
-  (let [{:keys [bullets]} state]
-    (reduce (fn [state bullet]
-              (let [{:keys [asteroids]} state]
-                (reduce (fn [state asteroid]
-                          (let [{{asteroid-shape :shape} :space-object} asteroid
-                                {{bullet-pos :pos} :space-object} bullet]
-                            (if (so/shape-contains? asteroid-shape bullet-pos)
-                              (do (j/play-sound :explode)
-                                  (reduced (-> state
-                                               (update :player #(p/increment-score % (a/score asteroid)))
-                                               (merge {:asteroids (disj asteroids asteroid)
-                                                       :bullets (disj bullets bullet)})
-                                               (split-asteroid asteroid))))
-                              state)))
-                        state
-                        asteroids)))
-            state
-            bullets)))
+  [{:keys [bullets] :as state}]
+  (reduce (fn [{:keys [asteroids] :as state}
+               {{bullet-pos :pos} :space-object :as bullet}]
+            (reduce (fn [state {{asteroid-shape :shape} :space-object :as asteroid}]
+                      (if (so/shape-contains? asteroid-shape bullet-pos)
+                        (do (j/play-sound :explode)
+                            (reduced (-> state
+                                         (update :player #(p/increment-score % (a/score asteroid)))
+                                         (merge {:asteroids (disj asteroids asteroid)
+                                                 :bullets (disj bullets bullet)})
+                                         (split-asteroid asteroid))))
+                        state))
+                    state
+                    asteroids))
+          state
+          bullets))
 
 (defn- handle-player-asteroid-collisions
-  [state]
-  (let [{:keys [player asteroids]} state
-        {{player-shape :shape} :space-object
-         hit? :hit?} player]
+  [{:keys [player asteroids] :as state}]
+  (let [{{player-shape :shape} :space-object
+         hit?                  :hit?} player]
     (if-not hit?
-      (reduce (fn [state asteroid]
-                (let [{{asteroid-shape :shape} :space-object} asteroid]
-                  (if (so/shapes-intersect? player-shape asteroid-shape)
-                    (do (j/play-sound :explode)
-                        (-> state
-                         (update :player #(p/player-hit %))
-                         (update :asteroids #(disj % asteroid))
-                         (split-asteroid asteroid)))
-                    state)))
+      (reduce (fn [state
+                   {{asteroid-shape :shape} :space-object :as asteroid}]
+                (if (so/shapes-intersect? player-shape asteroid-shape)
+                  (do (j/play-sound :explode)
+                      (-> state
+                          (update :player #(p/player-hit %))
+                          (update :asteroids #(disj % asteroid))
+                          (split-asteroid asteroid)))
+                  state))
               state
               asteroids)
       state)))
