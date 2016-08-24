@@ -146,7 +146,13 @@
         dead?
         (-> this
             (update :player #(p/reset %))
-            (update :player p/lose-life))
+            (update :player p/lose-life)
+            ;; kill any flying saucers when the player dies
+            ((fn [s]
+               (j/stop-sound :smallsaucer)
+               (j/stop-sound :largesaucer)
+               s))
+            (assoc :flying-saucer nil))
 
         ;; new level when asteroids are gone
         (= 0 (count asteroids))
