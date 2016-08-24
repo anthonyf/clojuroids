@@ -6,20 +6,8 @@
 (defrecord Bullet
     [space-object life-timer remove?])
 
-(defn make-bullet
-  [[x y] radians]
-  (let [speed 350]
-    (map->Bullet {:space-object (so/map->SpaceObject {:pos     [x y]
-                                                      :radians radians
-                                                      :dpos    (so/make-vector radians
-                                                                               speed)
-                                                      :size    [2 2]})
-                  :remove?      false
-                  :life-timer   (t/make-timer 1)})))
-
-(defn make-bullet-shape
-  [{{radians :radians
-     [x y]   :pos   } :space-object}]
+(defn- make-bullet-shape
+  [[x y]]
   [[(+ x 1)
     (+ y 1)]
    [(+ x 1)
@@ -27,12 +15,24 @@
    [(- x 1)
     (- y 1)]])
 
+(defn make-bullet
+  [pos radians]
+  (let [speed 350]
+    (map->Bullet {:space-object (so/map->SpaceObject {:pos     pos
+                                                      :radians radians
+                                                      :dpos    (so/make-vector radians
+                                                                               speed)
+                                                      :size    [2 2]
+                                                      :shape   (make-bullet-shape pos)})
+                  :remove?      false
+                  :life-timer   (t/make-timer 1)})))
+
 (defn update-bullet
   [bullet delta-time]
   (as-> bullet b
     (update b :space-object #(-> %
                                  (so/update-space-object! delta-time)
-                                 (assoc :shape (make-bullet-shape b))))
+                                 (assoc :shape (make-bullet-shape (-> b :space-object :pos)))))
     (update b :life-timer t/update-timer delta-time)
     (assoc b :remove? (let [{:keys [life-timer]} b]
                         (t/timer-elapsed? life-timer)))))
