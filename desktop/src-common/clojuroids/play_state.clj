@@ -8,7 +8,9 @@
             [clojuroids.particle :as part]
             [clojuroids.key-state :as ks]
             [clojuroids.space-object :as so]
-            [clojuroids.jukebox :as j])
+            [clojuroids.jukebox :as j]
+            [clojuroids.flying-saucer :as fs]
+            [clojuroids.timer :as t])
   (:import [com.badlogic.gdx.graphics.glutils ShapeRenderer]
            [com.badlogic.gdx.graphics.g2d SpriteBatch]
            [com.badlogic.gdx.graphics Color]
@@ -87,13 +89,28 @@
                    (assoc :bg-timer 0)))
            state)))))
 
+(defn update-or-spawn-flying-saucer
+  [state delta-time]
+  (if (nil? (:flying-saucer state))
+      (as-> state state
+        (update state :fs-timer t/update-timer delta-time)
+        (if (t/timer-elapsed? (:fs-timer state))
+          (-> state
+              (update :fs-timer t/reset-timer)
+              (assoc :flying-saucer
+                     (fs/make-flying-saucer (rand-nth [:left :right])
+                                            (rand-nth [:large :small]))))
+          state))
+      (fs/update-flying-saucer state delta-time)))
+
 (defrecord PlayState [shape-renderer player
                       bullets asteroids particles
                       level total-asteroids num-asteroids-left
                       sprite-batch font
                       current-delay
                       bg-timer
-                      play-low-pulse?]
+                      play-low-pulse?
+                      flying-saucer enemy-bullets]
   gsm/GameState
 
   (init [this]
@@ -107,6 +124,9 @@
                   :bullets         #{}
                   :asteroids       #{}
                   :particles       ()
+                  :flying-saucer   nil
+                  :enemy-bullets   #{}
+                  :fs-timer        (t/make-timer 15)
                   ;; set up bg music
                   :current-delay   max-delay
                   :bg-timer        max-delay
@@ -139,6 +159,8 @@
                   (handle-input)
                   (update :player #(p/update-player! % delta-time))
                   (update :bullets #(b/update-bullets % delta-time))
+                  (update :enemy-bullets #(b/update-bullets % delta-time))
+                  (update-or-spawn-flying-saucer delta-time)
                   (update :asteroids #(a/update-asteroids % delta-time))
                   (update :particles #(part/update-particles % delta-time))
                   (handle-collisions)
@@ -149,10 +171,13 @@
     (.setProjectionMatrix shape-renderer (.combined @c/camera))
     (p/draw-player player shape-renderer)
     (b/draw-bullets bullets shape-renderer)
+    (b/draw-bullets enemy-bullets shape-renderer)
     (a/draw-asteroids asteroids shape-renderer)
     (part/draw-particles particles shape-renderer)
     (p/draw-score player sprite-batch font)
-    (p/draw-player-lives player shape-renderer))
+    (p/draw-player-lives player shape-renderer)
+    (when-not (nil? flying-saucer)
+      (fs/draw-flying-saucer flying-saucer shape-renderer)))
 
   (dispose [this]
     (.dispose sprite-batch)

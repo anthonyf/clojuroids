@@ -21,11 +21,11 @@
   [{{radians :radians
      [x y]   :pos   } :space-object}]
   [[(+ x 1)
-      (+ y 1)]
-     [(+ x 1)
-      (- y 1)]
-     [(- x 1)
-      (- y 1)]])
+    (+ y 1)]
+   [(+ x 1)
+    (- y 1)]
+   [(- x 1)
+    (- y 1)]])
 
 (defn update-bullet
   [bullet delta-time]

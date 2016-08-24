@@ -14,7 +14,7 @@
 (defn vector-add [[x1 y1] [x2 y2]]
   [(+ x1 x2) (+ y1 y2)])
 
-(defn- wrap
+(defn wrap
   [space-object]
   (let [[screen-width screen-height] c/screen-size
         {[x y] :pos} space-object]
@@ -26,7 +26,7 @@
                   (> y screen-height) 0
                   :else y)])))
 
-(defn- move
+(defn move
   [space-object delta-time]
   (let [{[x y]   :pos
          [dx dy] :dpos} space-object]
