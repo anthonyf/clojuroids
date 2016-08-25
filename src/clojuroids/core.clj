@@ -49,8 +49,8 @@
           (.line @shape-renderer 1 sh 1 1))
         (.end @shape-renderer)
 
-        (k/update-key-state!)
-        (gsm/update-game-state!))
+        (gsm/update-game-state!)
+        (k/update-key-state!))
 
       (resize [this width height]
         (.update @viewport width height true))
