@@ -1,6 +1,5 @@
 (ns clojuroids.core
-  (:import [com.badlogic.gdx ApplicationListener
-            Gdx]
+  (:import [com.badlogic.gdx ApplicationListener Gdx]
            [com.badlogic.gdx.graphics GL30]))
 
 (def app-listener
