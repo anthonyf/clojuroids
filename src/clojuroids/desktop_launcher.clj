@@ -1,4 +1,4 @@
-(ns clojuroids.core.desktop-launcher
+(ns clojuroids.desktop-launcher
   (:require [clojuroids.core :refer :all]
             [clojuroids.common :as c])
   (:import [com.badlogic.gdx.backends.lwjgl
