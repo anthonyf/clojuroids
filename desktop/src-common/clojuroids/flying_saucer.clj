@@ -13,7 +13,6 @@
      type direction fire-timer
      path-timer-1 path-timer-2])
 
-
 (def speed 70)
 
 (defn score
