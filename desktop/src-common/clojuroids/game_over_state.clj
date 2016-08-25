@@ -53,6 +53,7 @@
 
   (draw [this]
     (.setProjectionMatrix sprite-batch (.combined @c/camera))
+    (.setProjectionMatrix shape-renderer (.combined @c/camera))
     (.begin sprite-batch)
     (c/draw-centered-text sprite-batch font "Game Over" 220)
     (.end sprite-batch)

@@ -15,6 +15,6 @@
                  (-> .title (set! c/title))
                  (-> .width (set! width))
                  (-> .height (set! height))
-                 (-> .resizable (set! false)))]
+                 (-> .resizable (set! true)))]
     (LwjglApplication. app-listener config)
     (Keyboard/enableRepeatEvents true)))
