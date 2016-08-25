@@ -56,7 +56,9 @@
 
         ;; draw a box around the game screen
         (.begin @shape-renderer ShapeRenderer$ShapeType/Line)
-        (let [[sw sh] c/screen-size]
+        (let [[sw sh] c/screen-size
+              sw (- sw 1)
+              sh (- sh 1)]
           (.line @shape-renderer 1 1 sw 1)
           (.line @shape-renderer sw 1 sw sh)
           (.line @shape-renderer sw sh 1 sh)
