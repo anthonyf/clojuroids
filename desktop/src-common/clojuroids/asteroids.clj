@@ -3,7 +3,7 @@
   (:import [com.badlogic.gdx.math MathUtils]))
 
 (defrecord Asteroid
-  [space-object type num-points dists remove?])
+  [space-object type num-points dists])
 
 (defn- update-asteroid-shape
   [asteroid]
@@ -33,7 +33,6 @@
   [asteroids delta-time]
   (->> asteroids
        (map #(update-asteroid % delta-time))
-       (remove :remove?)
        (into #{})))
 
 (def asteroid-color [1 1 1 1])

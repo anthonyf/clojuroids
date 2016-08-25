@@ -1,12 +1,13 @@
 (ns clojuroids.particle
-  (:require [clojuroids.space-object :as so])
+  (:require [clojuroids.space-object :as so]
+            [clojuroids.timer :as t])
   (:import [com.badlogic.gdx.math MathUtils]
            [com.badlogic.gdx.graphics.glutils
             ShapeRenderer ShapeRenderer$ShapeType]))
 
 
 (defrecord Particle
-    [space-object timer time remove?])
+    [space-object timer])
 
 (defn make-particle
   [pos]
@@ -17,23 +18,20 @@
                                           :size [2 2]
                                           :pos  pos
                                           :dpos (so/make-vector radians speed)})
-      :timer 0
-      :time 1
-      :remove? false})))
+      :timer (t/make-timer 1)})))
 
 (defn update-particle
   [particle delta-time]
   (as-> particle p
     (update p :space-object #(so/update-space-object! % delta-time))
-    (update p :timer + delta-time)
-    (assoc p :remove? (let [{:keys [timer time]} p]
-                        (> timer time)))))
+    (update p :timer t/update-timer delta-time)))
 
 (defn update-particles
   [particles delta-time]
   (->> particles
        (map #(update-particle % delta-time))
-       (remove :remove?)))
+       (remove (fn [particle]
+                 (t/timer-elapsed? (:timer particle))))))
 
 (def particle-color [1 1 1 1])
 

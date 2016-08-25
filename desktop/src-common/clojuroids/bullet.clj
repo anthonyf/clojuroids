@@ -6,7 +6,7 @@
             ShapeRenderer ShapeRenderer$ShapeType]))
 
 (defrecord Bullet
-    [space-object life-timer remove?])
+    [space-object life-timer])
 
 (defn make-bullet
   [pos radians]
@@ -16,22 +16,20 @@
                                                       :dpos    (so/make-vector radians
                                                                                speed)
                                                       :size    [2 2]})
-                  :remove?      false
                   :life-timer   (t/make-timer 1)})))
 
 (defn update-bullet
   [bullet delta-time]
   (as-> bullet b
     (update b :space-object so/update-space-object! delta-time)
-    (update b :life-timer t/update-timer delta-time)
-    (assoc b :remove? (let [{:keys [life-timer]} b]
-                        (t/timer-elapsed? life-timer)))))
+    (update b :life-timer t/update-timer delta-time)))
 
 (defn update-bullets
   [bullets delta-time]
   (->> bullets
        (map #(update-bullet % delta-time))
-       (remove :remove?)
+       (remove (fn [bullet]
+                 (t/timer-elapsed? (:life-timer bullet))))
        (into #{})))
 
 (def bullet-color [1 1 1 1])
