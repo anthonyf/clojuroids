@@ -4,6 +4,8 @@ Clojuroids is an impelementation of Asteroids in Clojure using libGDX.  The cloj
 
 ## Tutorial Parts
 
+(WIP: The parts below are incomplete.  The idea is to create a seperate branch for each tutorial part and then show the code differences between each one.  The master branch has the complete game code.)
+
 [Part 1 - project setup](https://github.com/anthonyf/clojuroids/commit/a8c70c33772d03ef6a5cf150335e132ba7ca5913)
 
 [Part 2 - setting up the camera](https://github.com/anthonyf/clojuroids/compare/part-1...part-2)
