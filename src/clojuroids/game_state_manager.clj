@@ -7,7 +7,7 @@
 (def game-states (atom {}))
 (def current-state (atom nil))
 (def next-state (atom nil))
-(def restartable? true)
+(def restartable? false)
 
 (defprotocol GameState
   "protocol for game states"
@@ -34,14 +34,15 @@
 (defn update-game-state!
   []
   (try
-    (swap! current-state update! (.getDeltaTime Gdx/graphics))
-    (draw @current-state)
     (when-not (nil? @next-state)
-      (dispose @current-state)
+      (when-not (nil? @current-state)
+        (dispose @current-state))
       (let [{:keys [key args]} @next-state]
         (reset! current-state (init (apply (key @game-states)
                                            args))))
       (reset! next-state nil))
+    (swap! current-state update! (.getDeltaTime Gdx/graphics))
+    (draw @current-state)
     (catch Exception e
       (if restartable?
         (do (reset! current-state (ErrorState.))
