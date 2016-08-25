@@ -7,8 +7,7 @@
                  [com.badlogicgames.gdx/gdx-backend-lwjgl "1.9.3"]
                  [com.badlogicgames.gdx/gdx-platform "1.9.3"
                   :classifier "natives-desktop"]
-                 [org.clojure/clojure "1.7.0"]
-                 [org.clojure/tools.trace "0.7.9"]]
-  :main clojuroids.desktop-launcher
+                 [org.clojure/clojure "1.8.0"]]
+  :main ^:skip-aot clojuroids.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
