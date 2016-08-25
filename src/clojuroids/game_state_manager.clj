@@ -8,7 +8,7 @@
 (def game-states (atom {}))
 (def current-state (atom nil))
 (def next-state (atom nil))
-(def restartable? true)
+(def restartable? false)
 
 (defprotocol GameState
   "protocol for game states"
