@@ -61,8 +61,7 @@
       (do
         (j/play-sound :shoot)
         (update state :bullets
-                #(conj %
-                       (b/make-bullet pos radians))))
+                conj (b/make-bullet pos radians)))
       state)))
 
 (declare handle-collisions handle-input)
@@ -76,7 +75,7 @@
                                               num-asteroids-left)
                                            total-asteroids)
                                         min-delay))))
-      (update :bg-timer #(+ % delta-time))
+      (update :bg-timer + delta-time)
       ((fn [{{:keys [hit?]} :player
              :keys [bg-timer current-delay play-low-pulse?]
              :as state}]
@@ -85,23 +84,32 @@
                                :pulselow
                                :pulsehigh))
                (-> state
-                   (update :play-low-pulse? #(not %))
+                   (update :play-low-pulse? not)
                    (assoc :bg-timer 0)))
            state)))))
 
 (defn update-or-spawn-flying-saucer
   [state delta-time]
   (if (nil? (:flying-saucer state))
-      (as-> state state
-        (update state :fs-timer t/update-timer delta-time)
-        (if (t/timer-elapsed? (:fs-timer state))
-          (-> state
-              (update :fs-timer t/reset-timer)
-              (assoc :flying-saucer
-                     (fs/make-flying-saucer (rand-nth [:left :right])
-                                            (rand-nth [:large :small]))))
-          state))
-      (fs/update-flying-saucer state delta-time)))
+    (as-> state state
+      (update state :fs-timer t/update-timer delta-time)
+      (if (t/timer-elapsed? (:fs-timer state))
+        (-> state
+            (update :fs-timer t/reset-timer)
+            (assoc :flying-saucer
+                   (fs/make-flying-saucer (rand-nth [:left :right])
+                                          (rand-nth [:large :small]))))
+        state))
+    (fs/update-flying-saucer state delta-time)))
+
+(defn kill-flying-saucer
+  [state]
+  (-> state
+      ((fn [s]
+         (j/stop-sound :smallsaucer)
+         (j/stop-sound :largesaucer)
+         s))
+      (assoc :flying-saucer nil)))
 
 (defrecord PlayState [shape-renderer player
                       bullets asteroids particles
@@ -145,31 +153,26 @@
         ;; handle dead player
         dead?
         (-> this
-            (update :player #(p/reset %))
+            (update :player p/reset)
             (update :player p/lose-life)
-            ;; kill any flying saucers when the player dies
-            ((fn [s]
-               (j/stop-sound :smallsaucer)
-               (j/stop-sound :largesaucer)
-               s))
-            (assoc :flying-saucer nil))
+            kill-flying-saucer)
 
         ;; new level when asteroids are gone
         (= 0 (count asteroids))
         (-> this
-            (update :level #(+ level %))
-            (spawn-asteroids))
+            (update :level + level)
+            spawn-asteroids)
 
         ;; otherwise update all game objects
         :else (-> this
-                  (handle-input)
-                  (update :player #(p/update-player! % delta-time))
-                  (update :bullets #(b/update-bullets % delta-time))
-                  (update :enemy-bullets #(b/update-bullets % delta-time))
+                  handle-input
+                  (update :player p/update-player! delta-time)
+                  (update :bullets b/update-bullets delta-time)
+                  (update :enemy-bullets b/update-bullets delta-time)
                   (update-or-spawn-flying-saucer delta-time)
-                  (update :asteroids #(a/update-asteroids % delta-time))
-                  (update :particles #(part/update-particles % delta-time))
-                  (handle-collisions)
+                  (update :asteroids a/update-asteroids delta-time)
+                  (update :particles part/update-particles delta-time)
+                  handle-collisions
                   (play-background-music delta-time)))))
 
   (draw [this]
@@ -225,44 +228,158 @@
                                                   (a/make-asteroid pos new-type)])))
                                asteroids))))))
 
-(defn- handle-asteroid-bullet-collisions
-  [{:keys [bullets] :as state}]
-  (reduce (fn [{:keys [asteroids] :as state}
-               {{bullet-pos :pos} :space-object :as bullet}]
-            (reduce (fn [state {{asteroid-shape :shape} :space-object :as asteroid}]
-                      (if (so/shape-contains? asteroid-shape bullet-pos)
-                        (do (j/play-sound :explode)
-                            (reduced (-> state
-                                         (update :player #(p/increment-score % (a/score asteroid)))
-                                         (merge {:asteroids (disj asteroids asteroid)
-                                                 :bullets (disj bullets bullet)})
-                                         (split-asteroid asteroid))))
-                        state))
-                    state
-                    asteroids))
+(defn find-collisions
+  [coll-a coll-b fn-contains?]
+  (reduce (fn [collisions a]
+            (reduce (fn [collisions b]
+                      (if (fn-contains? a b)
+                        (reduced (conj collisions [a b]))
+                        collisions))
+                    collisions
+                    coll-b))
+          []
+          coll-a))
+
+
+(defn bullet-asteroid-collision?
+  [{{bullet-pos :pos} :space-object}
+   {{asteroid-shape :shape} :space-object}]
+  (so/shape-contains? asteroid-shape bullet-pos))
+
+(defn handle-bullet-asteroid-collision
+  [{:keys [asteroids bullets] :as state} [bullet asteroid]]
+  (j/play-sound :explode)
+  (-> state
+      (update :player p/increment-score (a/score asteroid))
+      (update :asteroids disj asteroid)
+      (update :bullets disj bullet)
+      (split-asteroid asteroid)))
+
+(defn- handle-bullet-asteroid-collisions
+  [state]
+  (reduce handle-bullet-asteroid-collision
           state
-          bullets))
+          (find-collisions (:bullets state)
+                           (:asteroids state)
+                           bullet-asteroid-collision?)))
 
 (defn- handle-player-asteroid-collisions
   [{:keys [player asteroids] :as state}]
-  (let [{{player-shape :shape} :space-object
-         hit?                  :hit?} player]
+  (if-not (:hit? player)
+    (reduce (fn [state [player asteroid]]
+              (j/play-sound :explode)
+              (-> state
+                  (update :player p/player-hit)
+                  (update :asteroids disj asteroid)
+                  (split-asteroid asteroid)))
+            state
+            (find-collisions [(:player state)]
+                             (:asteroids state)
+                             (fn [player asteroid]
+                               (so/shapes-intersect? (-> player :space-object :shape)
+                                                     (-> asteroid :space-object :shape)))))
+    state))
+
+(defn handle-flying-saucer-player-collision
+  [state]
+  (let [{:keys [player flying-saucer]} state
+        {{player-pos :pos
+          player-shape :shape} :space-object} player
+        {{fs-shape :shape
+          fs-pos :pos} :space-object} flying-saucer]
+    (if (and (not (nil? flying-saucer))
+             (not (:hit? player))
+             (not (:dead? player))
+             (so/shapes-intersect? player-shape fs-shape))
+      (do
+        (j/play-sound :explode)
+        (-> state
+            (update :player p/player-hit)
+            (create-particles player-pos)
+            (create-particles fs-pos)
+            kill-flying-saucer))
+      state)))
+
+(defn handle-enemy-bullets-asteroid-collisions
+  [state]
+  (let [{:keys [enemy-bullets asteroids]} state]
+    (reduce (fn [state [enemy-bullet asteroid]]
+              (j/play-sound :explode)
+              (-> state
+                  (update :asteroids disj asteroid)
+                  (update :enemy-bullets disj enemy-bullet)
+                  (split-asteroid asteroid)))
+            state
+            (find-collisions enemy-bullets
+                             asteroids
+                             (fn [enemy-bullet asteroid]
+                               (so/shape-contains? (-> asteroid :space-object :shape)
+                                                   (-> enemy-bullet :space-object :pos)))))))
+
+(defn handle-enemy-bullets-player-collision
+  [state]
+  (let [{:keys [player enemy-bullets]} state
+        {:keys [hit?]} player]
     (if-not hit?
-      (reduce (fn [state
-                   {{asteroid-shape :shape} :space-object :as asteroid}]
-                (if (so/shapes-intersect? player-shape asteroid-shape)
-                  (do (j/play-sound :explode)
-                      (-> state
-                          (update :player #(p/player-hit %))
-                          (update :asteroids #(disj % asteroid))
-                          (split-asteroid asteroid)))
-                  state))
+      (reduce (fn [state [player bullet]]
+                (j/play-sound :explode)
+                (-> state
+                    (update :player p/player-hit)
+                    (create-particles (-> player :space-object :pos))
+                    (update :enemy-bullets disj bullet)))
               state
-              asteroids)
+              (find-collisions [player]
+                               enemy-bullets
+                               (fn [player bullet]
+                                 (so/shape-contains? (-> player :space-object :shape)
+                                                     (-> bullet :space-object :pos)))))
+      state)))
+
+(defn handle-flying-saucer-asteroid-collision
+  [state]
+  (let [{:keys [flying-saucer asteroids]} state]
+    (if-not (nil? flying-saucer)
+      (reduce (fn [state [flying-saucer asteroid]]
+                (j/play-sound :explode)
+                (-> state
+                    (update :asteroids disj asteroid)
+                    (split-asteroid asteroid)
+                    (create-particles (-> flying-saucer :space-object :pos))
+                    kill-flying-saucer))
+              state
+              (find-collisions [flying-saucer]
+                               asteroids
+                               (fn [flying-saucer asteroid]
+                                 (so/shapes-intersect? (-> flying-saucer :space-object :shape)
+                                                       (-> asteroid :space-object :shape)))))
+      state)))
+
+(defn handle-flying-saucer-player-bullet-collision
+  [state]
+  (let [{:keys [flying-saucer bullets]} state]
+    (if-not (nil? flying-saucer)
+      (reduce (fn [state [fs bullet]]
+                (j/play-sound :explode)
+                (-> state
+                    (update :bullets disj bullet)
+                    (create-particles (-> fs :space-object :pos))
+                    (update :player p/increment-score (fs/score fs))
+                    kill-flying-saucer))
+              state
+              (find-collisions [flying-saucer]
+                               bullets
+                               (fn [flying-saucer bullet]
+                                 (so/shape-contains? (-> flying-saucer :space-object :shape)
+                                                     (-> bullet :space-object :pos)))))
       state)))
 
 (defn- handle-collisions
   [state]
   (-> state
-      (handle-asteroid-bullet-collisions)
-      (handle-player-asteroid-collisions)))
+      handle-bullet-asteroid-collisions
+      handle-player-asteroid-collisions
+      handle-enemy-bullets-player-collision
+      handle-enemy-bullets-asteroid-collisions
+      handle-flying-saucer-player-collision
+      handle-flying-saucer-asteroid-collision
+      handle-flying-saucer-player-bullet-collision))

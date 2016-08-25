@@ -25,7 +25,7 @@
   [particle delta-time]
   (as-> particle p
     (update p :space-object #(so/update-space-object! % delta-time))
-    (update p :timer #(+ % delta-time))
+    (update p :timer + delta-time)
     (assoc p :remove? (let [{:keys [timer time]} p]
                         (> timer time)))))
 

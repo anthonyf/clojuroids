@@ -90,5 +90,7 @@
 
 (defn shapes-intersect?
   [shape-a shape-b]
-  (some #(shape-contains? shape-a %)
-        shape-b))
+  (or (some (partial shape-contains? shape-a)
+            shape-b)
+      (some (partial shape-contains? shape-b)
+            shape-a)))

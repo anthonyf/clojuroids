@@ -15,8 +15,13 @@
 
 
 (def speed 70)
-(def saucer-score {:large 200
-                   :small 1000})
+
+(defn score
+  [flying-saucer]
+  ((:type flying-saucer)
+   {:large 200
+    :small 1000}))
+
 (def bullets-per-second 1)
 (def path-time-1 2)
 (def path-time-2 (+ path-time-1 2))

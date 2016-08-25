@@ -28,12 +28,12 @@
       ;; menu up
       (and (k/key-pressed? Input$Keys/UP)
            (> current-item 0))
-      (update this :current-item #(- % 1))
+      (update this :current-item - 1)
 
       ;; menu down
       (and (k/key-pressed? Input$Keys/DOWN)
            (< current-item (dec (count menu-items))))
-      (update this :current-item #(+ % 1))
+      (update this :current-item + 1)
 
       ;; menu select
       (k/key-pressed? Input$Keys/ENTER)

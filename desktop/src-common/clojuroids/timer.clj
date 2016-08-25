@@ -10,7 +10,7 @@
 
 (defn update-timer
   [timer delta-time]
-  (update timer :timer #(+ % delta-time)))
+  (update timer :timer + delta-time))
 
 (defn timer-value
   [{timer :timer}]

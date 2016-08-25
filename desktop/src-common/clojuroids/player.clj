@@ -106,7 +106,7 @@
     (do (j/play-sound :extralife)
         (-> player
             (update :extra-lives inc)
-            (update :required-score #(+ % extra-life-increment))))
+            (update :required-score + extra-life-increment)))
     player))
 
 (defn- update-dead-player
@@ -114,7 +114,7 @@
   (j/stop-sound :thruster)
   (-> player
       ;; handle expiring hit timer
-      (update :hit-timer #(t/update-timer % delta-time))
+      (update :hit-timer t/update-timer delta-time)
       ((fn [player]
          (let [{:keys [hit-timer]} player]
            (merge player
@@ -155,7 +155,7 @@
         ;; update shapes
         (update-ship-shape p)
         ;; update space-object
-        (update p :space-object #(so/update-space-object! % delta-time))))))
+        (update p :space-object so/update-space-object! delta-time)))))
 
 (defn draw-player
   [player shape-renderer]
@@ -211,7 +211,7 @@
 
 (defn increment-score
   [player n]
-  (update player :score #(+ % n)))
+  (update player :score + n))
 
 (defn draw-score
   [player sprite-batch font]
