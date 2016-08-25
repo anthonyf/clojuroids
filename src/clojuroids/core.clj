@@ -9,6 +9,10 @@
             [clojuroids.game-over-state :as gos])
   (:import [com.badlogic.gdx ApplicationListener Gdx]
            [com.badlogic.gdx.graphics GL30 OrthographicCamera]
+           [com.badlogic.gdx.backends.lwjgl
+            LwjglApplication
+            LwjglApplicationConfiguration]
+           [org.lwjgl.input Keyboard]
            [com.badlogic.gdx.utils.viewport FitViewport]
            [com.badlogic.gdx.graphics.glutils ShapeRenderer ShapeRenderer$ShapeType]))
 
@@ -75,3 +79,14 @@
       (resume [this])
       (dispose [this]
         (.dispose @shape-renderer)))))
+
+(defn -main
+  []
+  (let [[width height] c/screen-size
+        config (doto (LwjglApplicationConfiguration.)
+                 (-> .title (set! c/title))
+                 (-> .width (set! width))
+                 (-> .height (set! height))
+                 (-> .resizable (set! true)))]
+    (LwjglApplication. app-listener config)
+    (Keyboard/enableRepeatEvents true)))
