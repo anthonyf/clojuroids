@@ -30,11 +30,11 @@
               (conj {:name name :score score})
               (->> (sort-by :score >)
                    (take 10))
-              (save-high-scores))))
+              save-high-scores)))
 
 (defn high-score?
   [score]
   (-> @high-scores
-      (last)
-      (:score)
+      last
+      :score
       (< score)))
