@@ -1,10 +1,36 @@
-## Introduction
+# clojuroids
 
-A play-clj game in which ... well, that part is up to you.
+FIXME: description
 
-## Contents
+## Installation
 
-* `android/src` Android-specific code
-* `desktop/resources` Images, audio, and other files
-* `desktop/src` Desktop-specific code
-* `desktop/src-common` Cross-platform game code
+Download from http://example.com/FIXME.
+
+## Usage
+
+FIXME: explanation
+
+    $ java -jar clojuroids-0.1.0-standalone.jar [args]
+
+## Options
+
+FIXME: listing of options this app accepts.
+
+## Examples
+
+...
+
+### Bugs
+
+...
+
+### Any Other Sections
+### That You Think
+### Might be Useful
+
+## License
+
+Copyright © 2016 FIXME
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
