@@ -1,13 +1,22 @@
 (ns clojuroids.space-object
+  (:require [clojuroids.common :as c])
   (:import [com.badlogic.gdx.graphics.glutils
-            ShapeRenderer ShapeRenderer$ShapeType]))
+            ShapeRenderer ShapeRenderer$ShapeType]
+           [com.badlogic.gdx.math Polygon MathUtils]))
 
 (defrecord SpaceObject
-  [pos dpos radians rotation-speed size shape])
+    [pos dpos radians rotation-speed shape])
 
-(defn- wrap
-  [space-object screen-size]
-  (let [[screen-width screen-height] screen-size
+(defn make-vector [direction magnitude]
+  [(* (MathUtils/cos direction) magnitude)
+   (* (MathUtils/sin direction) magnitude)])
+
+(defn vector-add [[x1 y1] [x2 y2]]
+  [(+ x1 x2) (+ y1 y2)])
+
+(defn wrap
+  [space-object]
+  (let [[screen-width screen-height] c/screen-size
         {[x y] :pos} space-object]
     (assoc space-object :pos
            [(cond (< x 0) screen-width
@@ -17,7 +26,7 @@
                   (> y screen-height) 0
                   :else y)])))
 
-(defn- move
+(defn move
   [space-object delta-time]
   (let [{[x y]   :pos
          [dx dy] :dpos} space-object]
@@ -52,15 +61,17 @@
     (draw-shape shape-renderer shape color)))
 
 (defn update-space-object!
-  [space-object screen-size delta-time]
+  [space-object delta-time]
   (-> space-object
       (move delta-time)
-      (wrap screen-size)))
+      (wrap)))
 
 (defn make-space-object
-  [pos radians]
-  (map->SpaceObject {:pos pos
-                     :dpos [0 0]
-                     :radians radians
-                     :rotation-speed 3
-                     :shape []}))
+  [& {:keys [pos dpos radians rotation-speed shape] :or
+      {pos [0 0]
+       dpos [0 0]
+       radians 0
+       rotation-speed 3
+       shape []}}]
+  (->SpaceObject pos dpos radians rotation-speed shape))
+
