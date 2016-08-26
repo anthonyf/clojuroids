@@ -5,7 +5,6 @@
             [clojuroids.key-state :as ks]
             [clojuroids.timer :as t])
   (:import [com.badlogic.gdx.math MathUtils]
-           [com.badlogic.gdx.graphics.g2d Batch]
            [com.badlogic.gdx Input$Keys]))
 
 (def acceleration 100)
